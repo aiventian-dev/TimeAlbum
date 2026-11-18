@@ -48,6 +48,14 @@ python3 album_server.py --lib "/Users/you/Pictures/照片图库.photoslibrary"
 
 If the port is taken, the server moves on to 8906, 8907 and so on.
 
+On first start it scans `/Volumes/` for `.photoslibrary` bundles. For libraries elsewhere you do not have to edit files: open **Library management** in the top bar and paste a path or folder; changes apply without restarting.
+
+### Permissions
+
+Reading a Photos library is protected by macOS. If libraries show as greyed out or the page says the database cannot be read, go to `System Settings → Privacy & Security → Full Disk Access`, add Terminal (or whichever app you launched), enable it, then restart the server.
+
+The first `python3` run may prompt you to install the Command Line Tools — accept once.
+
 ## Password (optional)
 
 Authentication is **off by default**. To require a password, create `密码.txt` in this directory and put the password on its first line — no code changes needed. Or use an environment variable:
