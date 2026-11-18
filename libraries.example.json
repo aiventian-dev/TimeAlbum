@@ -1,0 +1,16 @@
+{
+  "libraries": [
+    {
+      "id": "my-photos",
+      "name": "我的照片",
+      "path": "/Users/you/Pictures/照片图库.photoslibrary",
+      "kind": "photos"
+    },
+    {
+      "id": "my-folder",
+      "name": "相机导出",
+      "path": "/Users/you/Pictures/相机导出",
+      "kind": "folder"
+    }
+  ]
+}

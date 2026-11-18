@@ -1,0 +1,2478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>时光相册</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23100e0b'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23c79a5b' stroke-width='1.6'/%3E%3Ccircle cx='16' cy='16' r='3.4' fill='%23c79a5b'/%3E%3C/svg%3E">
+<style>
+:root{
+  --ink:#100e0b; --ink2:#171410; --ink3:#1e1a15;
+  --paper:#efe7d6; --muted:#8d8477; --dim:#6b6357;
+  --amber:#c79a5b; --amber2:#e0bd86;
+  --line:rgba(239,231,214,.12); --line2:rgba(239,231,214,.26);
+  --serif:"Didot","Baskerville","Songti SC","Times New Roman",serif;
+  --sans:"PingFang SC","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{background:var(--ink)}
+body{margin:0;background:var(--ink);color:var(--paper);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(85% 55% at 50% -10%,rgba(199,154,91,.13),transparent 62%);}
+::selection{background:rgba(199,154,91,.35)}
+
+/* ---------- 顶栏 ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:22px;
+  padding:13px 34px;background:rgba(16,14,11,.9);backdrop-filter:saturate(140%) blur(16px);
+  border-bottom:1px solid var(--line);}
+body{padding-top:var(--tbh,68px)}
+.brand{display:flex;align-items:center;gap:11px;flex:0 0 auto}
+.brand svg{width:26px;height:26px;flex:0 0 auto}
+.brand h1 a,.brand .home{color:inherit;text-decoration:none}
+.brand h1{margin:0;font-family:var(--serif);font-size:17px;font-weight:400;letter-spacing:.14em}
+.brand p{margin:2px 0 0;font-size:10.5px;color:var(--dim);letter-spacing:.08em}
+.crumbs{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);flex:1 1 auto;min-width:0;overflow:hidden}
+.crumbs a{color:var(--muted);text-decoration:none;padding-bottom:1px;border-bottom:1px solid transparent;white-space:nowrap}
+.crumbs a:hover{color:var(--amber2);border-bottom-color:var(--line2)}
+.crumbs .cur{color:var(--paper);border-bottom:1px solid var(--line2);padding-bottom:1px}
+.crumbs .sep{color:var(--dim)}
+.controls{display:flex;align-items:center;gap:20px;flex:0 1 auto;min-width:0;margin-left:auto}
+.reel{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+.reel input{-webkit-appearance:none;appearance:none;width:118px;height:18px;background:transparent;cursor:pointer;margin:0}
+.reel input::-webkit-slider-runnable-track{height:2px;background:linear-gradient(90deg,var(--amber) var(--p,100%),rgba(239,231,214,.22) var(--p,100%));}
+.reel input::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;margin-top:-4.5px;border-radius:50%;background:var(--amber2);box-shadow:0 0 0 3px rgba(199,154,91,.18)}
+.reel output{font-variant-numeric:tabular-nums;color:var(--paper);width:34px;text-align:right}
+.aging{position:relative;order:9}   /* 顶栏里排在最右，与详情页对齐 */
+.aging-btn{background:transparent;border:1px solid var(--line2);color:var(--muted);font-family:var(--sans);
+  font-size:11.5px;letter-spacing:.06em;padding:4px 10px;cursor:pointer;transition:color .2s,border-color .2s}
+.aging-btn:hover,.aging-btn[aria-expanded="true"]{color:var(--amber2);border-color:rgba(199,154,91,.55)}
+.aging-btn b{font-weight:400;color:var(--paper);font-variant-numeric:tabular-nums;margin-left:6px}
+.aging-panel{position:absolute;right:0;top:calc(100% + 10px);z-index:60;width:330px;padding:15px 18px 12px;
+  background:rgba(23,20,16,.97);border:1px solid var(--line2);box-shadow:0 18px 44px rgba(0,0,0,.55)}
+.aging-panel[hidden]{display:none}
+.ap-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.ap-k{font-size:11.5px;color:var(--muted);letter-spacing:.06em;width:56px;flex:0 0 auto}
+.ap-row input[type=range]{-webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:0;height:18px;
+  background:transparent;cursor:pointer;margin:0;accent-color:#c79a5b}
+.ap-row input[type=range]::-webkit-slider-runnable-track{height:2px;
+  background:linear-gradient(90deg,var(--amber) var(--p,100%),rgba(239,231,214,.22) var(--p,100%))}
+.ap-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;margin-top:-4.5px;
+  border-radius:50%;background:var(--amber2);box-shadow:0 0 0 3px rgba(199,154,91,.18)}
+.film-str input[type=range]{-webkit-appearance:none;appearance:none;flex:1 1 auto;min-width:0;height:18px;
+  background:transparent;cursor:pointer;margin:0;accent-color:#c79a5b}
+.film-str input[type=range]::-webkit-slider-runnable-track{height:2px;
+  background:linear-gradient(90deg,var(--amber) var(--p,100%),rgba(239,231,214,.22) var(--p,100%))}
+.film-str input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;height:11px;margin-top:-4.5px;
+  border-radius:50%;background:var(--amber2);box-shadow:0 0 0 3px rgba(199,154,91,.18)}
+.ap-row output{font-size:11px;color:var(--paper);font-variant-numeric:tabular-nums;width:26px;text-align:right}
+.ap-seg{display:flex;flex:1 1 auto;border:1px solid var(--line2)}
+.ap-seg button{flex:1 1 0;background:none;border:0;border-right:1px solid var(--line2);color:var(--muted);
+  font:inherit;font-size:11px;letter-spacing:.06em;padding:6px 16px;cursor:pointer;white-space:nowrap}
+.ap-seg button:last-child{border-right:0}
+.ap-seg button.on{background:rgba(199,154,91,.15);color:var(--amber2)}
+.ap-div{height:1px;margin:12px 0;background:rgba(239,231,214,.14)}
+.ap-block{display:flex;flex-direction:column;gap:9px;margin-bottom:2px}
+.ap-block .ap-k{width:auto}
+.ap-block .ap-seg{align-self:flex-start;min-width:132px;flex:0 0 auto}
+.ap-hint{margin:2px 0 0;font-size:10.5px;line-height:1.8;color:var(--dim);letter-spacing:.03em}
+
+/* 详情页右侧调节位：与顶栏同一套面板，位置固定在右上 */
+.lb-tools{position:absolute;right:16px;top:14px;z-index:6;display:flex;gap:8px}
+.lb-tools .aging{position:relative}
+.lb .aging-panel{top:calc(100% + 8px);right:0;left:auto;z-index:8}
+@media (max-width:760px){.lb-tools{right:12px;top:12px}}
+
+/* 数值列：等宽数字 + 固定宽度，位数变化不再抖动 */
+output{display:inline-block;font-variant-numeric:tabular-nums;text-align:right}
+.ap-row output{width:26px}
+.ap-row.dim{opacity:.4}
+.ap-row.dim input[type=range]{cursor:default}
+.film-str output{width:24px}
+.reel output{width:34px}
+.aging-btn b{display:inline-block;min-width:62px;text-align:right}
+
+/* ---------- 微动效 ---------- */
+@keyframes viewIn{from{opacity:0}to{opacity:1}}   /* 只用透明度，避免 transform 让 #app 成为包含块、破坏吸顶 */
+@keyframes lbInR{from{opacity:.25;transform:translateX(72px) scale(.975)}to{opacity:1;transform:none}}
+@keyframes lbInL{from{opacity:.25;transform:translateX(-72px) scale(.975)}to{opacity:1;transform:none}}
+@keyframes metaIn{from{opacity:.35}to{opacity:1}}
+#app.enter{animation:viewIn .48s cubic-bezier(.16,.84,.28,1) both}
+.lb .aged.inr{animation:lbInR .38s cubic-bezier(.16,.84,.28,1) both}
+.lb .aged.inl{animation:lbInL .38s cubic-bezier(.16,.84,.28,1) both}
+#lb figcaption.enter p{animation:metaIn .25s ease-out both}
+@media (prefers-reduced-motion: reduce){
+  #app.enter,.lb .aged.inr,.lb .aged.inl,#lb figcaption.enter p{animation:none}
+}
+.libsel{-webkit-appearance:none;appearance:none;background:transparent;border:0;border-bottom:1px solid var(--line2);
+  color:var(--paper);font-family:var(--sans);font-size:12px;padding:3px 16px 3px 0;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:right 4px center,right 0 center;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.libsel option{background:#171410;color:var(--paper)}
+.logout{flex:0 0 auto;margin-left:16px;font-size:11.5px;letter-spacing:.1em;color:var(--dim);text-decoration:none;
+  border-bottom:1px solid var(--line2);padding-bottom:1px;transition:color .2s,border-color .2s}
+.logout:hover{color:var(--amber2);border-color:var(--amber2)}
+.libmgr{position:relative;flex:0 0 auto}
+.lib-panel{width:400px;padding:14px 16px 12px}
+.lib-row{display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid rgba(239,231,214,.10)}
+.lib-row:last-of-type{border-bottom:0}
+.lib-info{flex:1 1 auto;min-width:0}
+.lib-name{font-size:12px;color:var(--paper);letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-path{font-size:10px;color:var(--dim);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-tag{font-size:9.5px;letter-spacing:.08em;padding:2px 6px;border:1px solid var(--line2);color:var(--amber2);flex:0 0 auto;align-self:center}
+.lib-tag.folder{color:var(--muted)}
+.lib-op{background:transparent;border:0;color:var(--dim);font-family:var(--sans);font-size:10.5px;
+  padding:2px 4px;cursor:pointer;letter-spacing:.04em;white-space:nowrap;flex:0 0 auto}
+.lib-op:hover{color:var(--amber2)}
+.lib-op.danger:hover{color:#c96a52}
+.lib-add{display:flex;align-items:center;gap:8px;margin-top:12px}
+.lib-add input{flex:1 1 auto;min-width:0;background:rgba(239,231,214,.06);border:1px solid var(--line2);
+  color:var(--paper);font-family:var(--sans);font-size:11px;padding:6px 8px}
+.lib-add input:focus{outline:none;border-color:rgba(199,154,91,.6)}
+.lib-add button{background:transparent;border:1px solid var(--line2);color:var(--muted);font-family:var(--sans);
+  font-size:11px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.lib-add button:hover{color:var(--amber2);border-color:rgba(199,154,91,.55)}
+.lib-add button:disabled{opacity:.45;cursor:default}
+.lib-msg{margin:9px 0 0;font-size:10.5px;line-height:1.7;color:var(--dim)}
+.lib-msg.err{color:#d08770}
+
+/* ---------- 封面做旧层 ---------- */
+.aged{position:relative;overflow:hidden;background:#0b0908}
+.aged img,.aged video{display:block;width:100%;height:100%;object-fit:cover;position:relative;z-index:0;transition:filter .45s ease}
+.aged::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:multiply;
+  background:
+    radial-gradient(132% 132% at 50% 33%,
+      rgba(var(--hi,255,231,186), var(--hiop,0)) 0%,
+      rgba(var(--hi,255,231,186), 0) 66%),
+    radial-gradient(126% 126% at 50% 106%,
+      rgba(var(--sh,54,35,14), var(--shop,0)) 0%,
+      rgba(var(--sh,54,35,14), 0) 62%);}
+.aged::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='4.0' intercept='-1.76'/%3E%3CfeFuncG type='linear' slope='4.0' intercept='-1.76'/%3E%3CfeFuncB type='linear' slope='4.0' intercept='-1.76'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='150' height='150' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size:150px 150px;opacity:var(--gop,0);}
+
+/* ---------- 布局 ---------- */
+main{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:0 34px 110px}
+
+/* ---------- 开场 ---------- */
+.intro{padding:64px 0 40px}
+.intro-nums{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+.num{font-family:var(--serif);font-size:clamp(44px,6.4vw,78px);line-height:.92;letter-spacing:-.02em;font-variant-numeric:lining-nums}
+.unit{font-family:var(--sans);font-size:13px;color:var(--muted);letter-spacing:.16em;margin-right:34px}
+.lede{margin:20px 0 0;max-width:min(47ch,100%);font-size:13.5px;line-height:2;color:var(--muted)}
+.lede em{font-style:normal;color:var(--amber2)}
+.band{display:flex;gap:3px;height:66px;margin-top:34px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 0}
+.seg{flex:1 1 0;min-width:0;position:relative;padding:0;border:0;background:#0b0908;cursor:pointer;overflow:hidden;outline-offset:2px}
+.seg{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  border-right:1px solid var(--line);transition:background .2s}
+.seg:last-child{border-right:0}
+.seg .y{position:static;font-family:var(--serif);font-size:15px;line-height:1;letter-spacing:.06em;
+  color:var(--muted);padding:0;background:none;width:auto;text-align:center;opacity:1;transition:color .2s}
+.seg .n{position:static;inset:auto;display:block;font-size:9.5px;letter-spacing:.02em;color:var(--dim);
+  background:none;opacity:1;transition:color .2s;font-family:var(--sans,inherit)}
+.seg:hover{background:rgba(199,154,91,.08)}
+.seg:hover .y{color:var(--amber2)}
+.seg:hover .n{color:var(--paper);opacity:1}
+.seg:focus-visible{outline:1px solid var(--amber)}
+
+/* ---------- 年行 ---------- */
+.yearlist{border-top:1px solid var(--line)}
+.yr{display:grid;grid-template-columns:186px 1fr;gap:30px;align-items:start;padding:20px 0 26px;
+  border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
+.yr:hover .yr-y{color:var(--amber2)}
+.yr-l{display:flex;flex-direction:column;gap:5px}
+.yr-y{font-family:var(--serif);font-size:44px;line-height:1;letter-spacing:.01em;transition:color .25s}
+.yr-meta{font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+.yr-meta s{text-decoration:none;color:var(--dim);margin:0 5px}
+/* 首页：每年的月份块（每月 6 张缩略图） */
+.yr-m{display:grid;grid-template-columns:repeat(4,1fr);gap:22px 18px}
+.yr-m .mb .mlabel b{font-size:20px}
+.yr-m .mb .mlabel{margin-top:8px}
+.yr-m .mb .mlabel span{font-size:10.5px}
+.strip{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.strip .aged{aspect-ratio:4/3}
+.yr:hover .strip .aged{filter:brightness(1.06)}
+
+/* ---------- 年 / 月视图头 ---------- */
+.head{padding:52px 0 26px;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line)}
+.head h2{margin:0;font-family:var(--serif);font-weight:400;font-size:clamp(32px,4.4vw,52px);line-height:1;letter-spacing:.01em}
+.head .meta{font-size:12px;color:var(--muted);line-height:1.9;text-align:right;letter-spacing:.02em}
+.head .meta b{color:var(--paper);font-weight:400}
+
+.months{display:grid;grid-template-columns:repeat(4,1fr);gap:34px 22px;padding-top:30px}
+.mb{display:block;text-decoration:none;color:inherit}
+.mb{min-width:0}
+.mb .mosaic{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;min-width:0}
+.mb .mosaic .aged{aspect-ratio:1/1}
+.mb .mosaic .pad{aspect-ratio:1/1;background:transparent}
+.strip .pad{aspect-ratio:4/3;background:transparent}
+.mb:hover .mlabel b{color:var(--amber2)}
+.mlabel{display:flex;align-items:baseline;gap:9px;margin-top:10px}
+.mlabel b{font-family:var(--serif);font-weight:400;font-size:25px;line-height:1;transition:color .25s}
+.mlabel span{font-size:11px;color:var(--muted)}
+.mlabel .sp{flex:1}
+
+/* ---------- 月历（日视图） ---------- */
+.calwrap{padding-top:22px}
+.dow{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;font-size:11px;color:var(--muted);letter-spacing:.14em;padding:0 0 9px}
+.dow div{text-align:right;padding-right:6px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cell{position:relative;aspect-ratio:1/1;text-decoration:none;color:inherit;background:#0b0908;overflow:hidden}
+.cell.empty{background:transparent}
+.cell .aged{position:absolute;inset:0}
+.cell .dnum{position:absolute;left:7px;top:5px;z-index:3;font-family:var(--serif);font-size:16px;color:#f6efdf;text-shadow:0 1px 6px rgba(0,0,0,.75)}
+.cell .cnum{position:absolute;right:7px;bottom:6px;z-index:3;font-size:10px;color:#f6efdf;text-shadow:0 1px 6px rgba(0,0,0,.8);letter-spacing:.04em}
+.cell:hover{outline:1px solid var(--amber);outline-offset:-1px}
+.cell::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(155deg,rgba(8,6,4,.62) 0%,rgba(8,6,4,.16) 26%,rgba(8,6,4,0) 46%),
+             linear-gradient(0deg,rgba(8,6,4,.55) 0%,rgba(8,6,4,0) 22%);}
+.noprev{position:absolute;inset:0;z-index:4;display:grid;place-items:center;font-size:10px;
+  color:var(--dim);letter-spacing:.14em;
+  background:repeating-linear-gradient(135deg,#17130f 0 9px,#141110 9px 18px);}
+
+/* ---------- 连续照片流 ---------- */
+.streamtop{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  padding:30px 0 16px;border-bottom:1px solid var(--line)}
+.st-date{font-family:var(--serif);font-size:27px;letter-spacing:.01em}
+.st-wd{margin-left:12px;font-size:12px;color:var(--muted);letter-spacing:.08em}
+.st-r{font-size:11px;color:var(--dim);letter-spacing:.05em}
+.stream{display:block;padding-top:10px}
+.daysec{position:relative}
+.dayhead{position:sticky;top:var(--tbv,68px);z-index:7;transition:top .26s cubic-bezier(.22,.61,.36,1);display:flex;align-items:baseline;gap:10px;
+  padding:15px 0 11px;margin-bottom:2px;
+  background:var(--bg,#100e0b)}
+.dh-d{font-family:var(--serif);font-size:20px;letter-spacing:.03em;color:var(--paper)}
+.dh-m{font-size:11px;color:var(--muted);letter-spacing:.03em;white-space:nowrap}
+.dh-ln{flex:1 1 auto;min-width:20px;height:1px;background:var(--line);transform:translateY(-6px)}
+.dh-p{font-size:11px;color:var(--amber2);letter-spacing:.03em;max-width:42%;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.prow{display:flex;gap:4px;margin-bottom:4px}
+.ph{position:relative;flex:0 0 auto;padding:0;border:0;background:#0b0908;overflow:hidden;cursor:pointer}
+.ph .badge{position:absolute;right:5px;bottom:5px;z-index:3;font-size:9px;letter-spacing:.06em;color:#f2ead9;
+  background:rgba(10,8,6,.66);border:1px solid rgba(239,231,214,.22);padding:1px 5px}
+.ph .clock{position:absolute;left:0;right:0;bottom:0;z-index:3;padding:14px 7px 4px;font-size:10px;
+  color:#f6efdf;letter-spacing:.05em;font-variant-numeric:tabular-nums;text-align:left;opacity:0;
+  transition:opacity .2s;background:linear-gradient(0deg,rgba(0,0,0,.72),transparent)}
+.ph:hover .clock,.ph:focus-visible .clock{opacity:1}
+.ph:hover{outline:1px solid var(--line2);outline-offset:-1px}
+.prowwrap.sqgrid{display:grid;gap:4px;margin-bottom:4px}
+.prowwrap.sqgrid .ph{width:100%;height:auto;aspect-ratio:1/1}
+.st-tools{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.fitbar{display:flex;border:1px solid var(--line2)}
+.fitbar[hidden]{display:none}
+.fitbar button{background:transparent;border:0;color:var(--muted);font-family:var(--sans);font-size:11px;
+  padding:4px 11px;cursor:pointer;letter-spacing:.04em}
+.fitbar button+button{border-left:1px solid var(--line2)}
+.fitbar button.on{background:rgba(199,154,91,.18);color:var(--amber2)}
+.calend{text-align:center;font-size:11px;letter-spacing:.16em;color:var(--dim);padding:26px 0 6px}
+.monsec{padding-bottom:30px}
+.pgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+.pg{position:relative;display:block;color:inherit;text-decoration:none}
+.pg .aged{aspect-ratio:1/1}
+.pg .pgt{position:absolute;left:5px;bottom:4px;z-index:3;font-size:9.5px;letter-spacing:.06em;color:#f2ead9;text-shadow:0 1px 5px rgba(0,0,0,.85)}
+.pg:hover .pgt{color:var(--amber)}
+.pg-empty{padding:20px 0;font-size:11.5px;color:var(--muted)}
+.monhead{position:sticky;top:var(--tbv,68px);z-index:7;transition:top .26s cubic-bezier(.22,.61,.36,1);display:flex;align-items:baseline;gap:10px;
+  padding:22px 0 12px;background:var(--bg,#100e0b)}
+.monhead .dh-d{font-size:19px}
+.sent{height:1px}
+
+/* ---------- 灯箱 ---------- */
+.lb{position:fixed;inset:0;z-index:100;background:#0a0907;display:block;padding:0;overflow:hidden}
+.lb[hidden]{display:none}
+.lb-stage{position:absolute;left:0;right:0;top:0;bottom:0;display:grid;place-items:stretch;
+  min-height:0;overflow:visible;padding:0}
+/* 参数条浮在照片上：照片按“参数条以上”的区域适配，放大后仍可钻到它下面 */
+#lbMedia{padding-bottom:var(--capH,0px)}
+#lbMedia{position:absolute;inset:0;display:grid;place-items:center}
+.lb .aged{max-width:none;max-height:none;box-shadow:none;overflow:visible;background:transparent}
+/* 灯箱里放大时，颗粒 / 暗角 / 色调层跟着照片一起变换，避免出现一块矩形加深 */
+.lb .aged::before,.lb .aged::after{inset:0;left:0;top:0;width:auto;height:auto;
+  transform:translate(var(--zfx,0px),var(--zfy,0px)) scale(var(--zfsc,1));
+  transform-origin:50% 50%;transition:transform .16s ease}
+.lb .aged.raw::before,.lb .aged.raw::after{transform:none;transition:none}
+.lb .aged img,.lb .aged video{width:100%;height:100%;max-width:none;max-height:none;object-fit:contain}
+.vplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;cursor:pointer;
+  background:rgba(12,10,8,.74);border:1px solid rgba(239,231,214,.34);color:#f4ecdb;
+  font-family:var(--sans);font-size:11.5px;letter-spacing:.22em;padding:11px 20px 11px 24px}
+.vplay:hover{border-color:var(--amber);color:var(--amber2)}
+.vtri{display:inline-block;width:0;height:0;border-left:7px solid currentColor;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;margin-right:9px;vertical-align:middle}
+.lb figcaption{position:absolute;left:0;right:0;bottom:0;z-index:9;display:flex;align-items:center;justify-content:space-between;gap:26px;
+  padding:14px 26px 16px;border-top:1px solid rgba(239,231,214,.2);margin-top:0;
+  background:linear-gradient(180deg,rgba(10,9,7,.16),rgba(10,9,7,.34));
+  -webkit-backdrop-filter:blur(5px) saturate(1.25);backdrop-filter:blur(5px) saturate(1.25);
+  box-shadow:inset 0 1px 0 rgba(255,247,232,.10),0 -14px 32px rgba(0,0,0,.22)}
+.lb .cap-l{flex:1 1 auto;min-width:0}
+.lb-date{font-family:var(--serif);font-size:19px;letter-spacing:.02em}
+.lb-meta{margin-top:4px;font-size:11.5px;color:var(--muted);letter-spacing:.02em}
+.lb-place{margin-top:5px;font-size:11.5px;color:var(--amber2);letter-spacing:.03em}
+.lb .cap-r{flex:0 1 auto;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;gap:10px;max-width:58%}
+.lb .cap-r[hidden]{display:none}
+.cap-r .exif-t{min-width:0;text-align:right;font-size:12px;line-height:1.6;color:var(--muted);letter-spacing:.02em}
+.cap-r .exif-t b{font-weight:400;color:#cbc2b0}
+.cap-r .exif-t .ex2{display:inline}
+.cap-r .exif-t .ex2::before{content:"·";margin:0 .55em;opacity:.35}
+.cap-r .exif-t em{font-style:normal;color:var(--dim)}
+.lb-brand{flex:0 0 auto;display:block;color:var(--paper);opacity:.56;transition:color .25s ease,opacity .25s ease}
+.lb-brand svg{display:block;width:120px;height:32px}
+body[data-logo="color"] .lb-brand{opacity:1}
+
+.lb .nav{display:flex;gap:8px}
+.btn{background:transparent;border:1px solid var(--line2);color:var(--paper);font-family:var(--sans);font-size:12px;
+  padding:7px 13px;cursor:pointer;letter-spacing:.04em;border-radius:1px}
+.btn:hover{border-color:var(--amber);color:var(--amber2)}
+.btn:focus-visible{outline:1px solid var(--amber);outline-offset:2px}
+.lb-close{position:absolute;left:16px;right:auto;top:14px;z-index:5}
+/* 详情页所有按钮统一一种质感：深色半透明玻璃 + 细线框 */
+.lb .btn{background:rgba(12,10,8,.34);border:1px solid rgba(255,247,232,.22);color:var(--paper);
+  -webkit-backdrop-filter:blur(5px) saturate(1.25);backdrop-filter:blur(5px) saturate(1.25);
+  box-shadow:inset 0 1px 0 rgba(255,247,232,.14),0 3px 14px rgba(0,0,0,.26)}
+.lb .btn:hover{background:rgba(20,16,12,.46);border-color:var(--amber);color:var(--amber2)}
+/* 包浆入口同样是深色玻璃按钮，压在照片上也看得清 */
+.lb .aging-btn{background:rgba(12,10,8,.34);border:1px solid rgba(255,247,232,.22);padding:7px 13px;
+  -webkit-backdrop-filter:blur(5px) saturate(1.25);backdrop-filter:blur(5px) saturate(1.25);
+  box-shadow:inset 0 1px 0 rgba(255,247,232,.14),0 3px 14px rgba(0,0,0,.26)}
+.lb .aging-btn:hover,.lb .aging-btn[aria-expanded="true"]{background:rgba(20,16,12,.46);border-color:rgba(199,154,91,.6)}
+.lb .btn[disabled]{opacity:.35;background:rgba(12,10,8,.5)}
+.lb-arrow{position:absolute;top:50%;transform:translateY(-50%);font-size:16px;padding:14px 12px;z-index:5}
+.lb-prev{left:10px}.lb-next{right:10px}
+
+/* ---------- 启动 / 空态 ---------- */
+.boot{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:var(--muted)}
+.boot .ring{width:44px;height:44px;border:1px solid rgba(199,154,91,.45);border-radius:50%;position:relative;animation:spin 2.6s linear infinite}
+.boot .ring::after{content:"";position:absolute;left:50%;top:-1px;width:8px;height:8px;margin-left:-4px;border-radius:50%;background:var(--amber)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.boot p{margin:0;font-size:12.5px;letter-spacing:.08em}
+.empty{padding:90px 0;color:var(--dim);font-size:13px;text-align:center}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:1100px){
+  .months{grid-template-columns:repeat(3,1fr)}
+  .daygrid{grid-template-columns:repeat(4,1fr)}
+  .pgrid{grid-template-columns:repeat(4,1fr)}
+  .dh-m{font-size:10.5px}
+  .yr{grid-template-columns:150px 1fr;gap:20px;align-items:start}
+  .yr-m{grid-template-columns:repeat(3,1fr);gap:18px 14px}
+  .yr-y{font-size:36px}
+}
+@media (max-width:760px){
+  html,body{overflow-x:clip}
+  .lede{max-width:100%!important}
+  main{padding:0 14px 70px;max-width:100%}
+  .topbar{padding:10px 14px;gap:10px;flex-wrap:wrap}
+  .brand h1{font-size:15px;letter-spacing:.1em}
+  .brand p{display:none}
+  .controls{gap:10px}
+  .reel{gap:6px;font-size:11px}
+  .reel input{width:80px}
+  .reel output{width:28px}
+  .libsel{max-width:88px;text-overflow:ellipsis;flex:0 1 auto;min-width:0}
+  .crumbs{order:3;flex-basis:100%}
+  .num{font-size:clamp(34px,10.5vw,52px)}
+  .unit{margin-right:16px;font-size:11px}
+  .band{height:46px}
+  .band .seg .y{font-size:9px}
+  .intro{padding:34px 0 22px}
+  .band{height:50px}
+  .months{grid-template-columns:repeat(2,1fr);gap:26px 14px}
+  .daygrid{grid-template-columns:repeat(3,1fr)}
+  .pgrid{grid-template-columns:repeat(3,1fr);gap:4px}
+  .strip{grid-template-columns:repeat(2,1fr)}
+  .yr{grid-template-columns:1fr;gap:12px}
+  .yr-m{grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+  .yr-m .mb .mlabel b{font-size:17px}
+  .yr-m .mb .mlabel span{font-size:10px}
+  .yr-l{flex-direction:row;align-items:baseline;gap:12px}
+  .yr-y{font-size:30px}
+  .head{flex-direction:column;align-items:flex-start;gap:10px}
+  .head .meta{text-align:left}
+  .dow div{font-size:9px}
+  .lb figcaption{flex-wrap:wrap}
+  .streamtop{padding:20px 0 12px}
+  .st-date{font-size:21px}
+  .st-wd{font-size:11px;margin-left:8px}
+  .st-r{display:none}
+  .fitbar button{padding:3px 8px;font-size:10px}
+  .dh-p{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ---------- 手机端灯箱 ---------- */
+@media (max-width:760px){
+  .lb{padding:16px 12px 12px}
+  .lb figcaption{flex-direction:column;align-items:center;gap:14px;padding:12px 4px 0;margin-top:10px}
+  .lb .cap-l{flex:none;width:100%;text-align:center}
+  .lb-date{font-size:17px}
+  .lb .cap-r{width:100%;max-width:100%;align-items:center;gap:10px}
+  .cap-r .exif-t{text-align:center;font-size:11.5px;line-height:1.65}
+  .lb-brand svg{width:104px;height:28px}
+  .lb-arrow{display:none}
+  .lb .aged,.lb .aged img,.lb .aged video{max-height:56vh;max-width:100%}
+}
+#lbMedia{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#lbMedia img{-webkit-user-drag:none;user-drag:none}
+
+
+/* ---------- 手机端：上滑收起顶栏 / 下拉回落，所有层级通用 ---------- */
+.topbar{transition:transform .26s cubic-bezier(.22,.61,.36,1)}
+.topbar.is-hidden{transform:translateY(-101%)}
+@media (max-width:760px){.topbar{will-change:transform}}
+@media (prefers-reduced-motion:reduce){.topbar{transition:none}}
+
+/* ---------- 手机端：顶栏分两行 / 月份一列 / 灯箱信息两行 ---------- */
+@media (max-width:760px){
+  .topbar{padding:10px 14px 8px;gap:8px 10px}
+  .brand{flex:1 1 100%;order:1}
+  .controls{order:2;flex:1 1 100%;flex-wrap:wrap;gap:10px}
+  .crumbs{order:3;flex-basis:100%}
+  .months{grid-template-columns:1fr;gap:22px}
+  .lb .aged,.lb .aged img,.lb .aged video{max-height:60vh}
+  .lb figcaption{flex-direction:column;align-items:center;gap:10px;margin-top:12px;padding:12px 4px 0}
+  .lb .cap-l{flex:none;width:100%;text-align:center}
+  .lb .cap-r{width:100%;max-width:100%;align-items:center;gap:9px}
+  .cap-r .exif-t{text-align:center;font-size:11.5px;line-height:1.7}
+  .cap-r .exif-t .ex2{display:block}
+  .cap-r .exif-t .ex2::before{content:none}
+  .lb-brand svg{width:100px;height:27px}
+}
+
+@media (max-width:760px){
+  .aging-panel{right:0;left:auto;width:min(330px,calc(100vw - 24px));top:calc(100% + 8px);max-height:64vh;overflow:auto}
+  .lib-panel{left:0;right:auto;width:min(320px,calc(100vw - 30px))}
+}
+
+/* 灯箱底部信息区：手机上把高度钉住、贴底，不随照片宽高上下窜 */
+@media (max-width:760px){
+  .lb{padding:0}
+  .lb-stage{min-height:0;padding:0;left:0;right:0}
+  .lb figcaption{justify-content:flex-start;flex-direction:column;align-items:center;gap:8px;
+    margin-top:0;padding:12px 16px 14px;overflow:hidden;max-height:62vh}
+  .lb .cap-l{flex:none;width:100%;text-align:center}
+  .lb .cap-r{width:100%;max-width:100%;align-items:center;justify-content:flex-start;gap:8px}
+  .lb .aged,.lb .aged img,.lb .aged video{max-height:calc(100vh - 300px)}
+  .lb-brand{display:flex;width:100%;justify-content:center;margin:0 auto}
+  .lb-brand svg{margin:0 auto}
+  .libsel{max-width:60vw}
+}
+
+
+/* ---------- 胶片模拟 ---------- */
+.ap-film{margin-top:12px;padding-top:12px;border-top:1px solid rgba(239,231,214,.12);display:block}
+.ap-film .ap-k{display:block;margin-bottom:9px}
+.film-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 8px}
+.ftile{background:none;border:1px solid transparent;padding:5px 2px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;border-radius:1px}
+.ftile:hover{border-color:rgba(199,154,91,.4)}
+.ftile.on{border-color:rgba(199,154,91,.75);background:rgba(199,154,91,.06)}
+.ftile svg{display:block;width:38px;height:63px}
+.ftile span{font-family:var(--sans);font-size:9px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;line-height:1.35;text-align:center;max-width:100%}
+.ftile span br+i,.ftile span i{font-style:normal}
+.ftile.on span{color:var(--amber2)}
+.film-str{display:flex;align-items:center;gap:9px;margin-top:11px}
+.film-str .ap-k{margin:0;white-space:nowrap;font-size:10.5px}
+.film-str input[type=range]{flex:1;min-width:0}
+.film-str[hidden]{display:none}
+.film-str output{font-size:11px;color:var(--muted);width:22px;text-align:right}
+.ap-chk{display:flex;align-items:center;gap:5px;font-family:var(--sans);font-size:10px;letter-spacing:.08em;color:var(--muted);cursor:pointer;white-space:nowrap}
+.ap-chk input{appearance:none;width:11px;height:11px;border:1px solid rgba(239,231,214,.4);margin:0;cursor:pointer;position:relative}
+.ap-chk input:checked{border-color:var(--amber);background:rgba(199,154,91,.5)}
+.ap-chk[hidden]{display:none}
+
+/* ---------- 灯箱缩放 ---------- */
+.lb-zoom{position:absolute;right:16px;bottom:calc(var(--capH,0px) + 14px);display:flex;gap:8px;z-index:10}
+.lb-zoom .btn{padding:9px 13px;font-size:15px;line-height:1;min-width:40px}
+.lb-zoom .btn[disabled]{opacity:.35;cursor:default}
+/* 桌面端：指针进入照片范围后浮动控件才出现（关闭 / 前后翻页 / 缩放） */
+@media (hover:none),(pointer:coarse){
+  #lb .lb-close,#lb .lb-zoom,#lb .lb-arrow,#lb .lb-tools{opacity:0;pointer-events:none;transition:opacity .22s ease}
+  #lb.ui-on .lb-close,#lb.ui-on .lb-zoom,#lb.ui-on .lb-arrow,#lb.ui-on .lb-tools{opacity:1;pointer-events:auto}
+}
+@media (hover:hover) and (min-width:761px){
+  #lb .lb-close,#lb .lb-zoom,#lb .lb-arrow,#lb .lb-tools{opacity:0;pointer-events:none;transition:opacity .22s ease}
+  #lb.ui-on .lb-close,#lb.ui-on .lb-zoom,#lb.ui-on .lb-arrow,#lb.ui-on .lb-tools{opacity:1;pointer-events:auto}
+}
+@media (prefers-reduced-motion:reduce){
+  #lb .lb-close,#lb .lb-zoom,.lb-arrow,#lb .lb-tools{transition:none}
+}
+
+/* ---------- 手机端：照片占满可用区域 ---------- */
+@media (max-width:760px){
+  .lb{padding:0}
+  /* 旧的 max-height 上限会把照片压小、和滤镜层对不齐，这里彻底放开 */
+  .lb .aged img,.lb .aged video{max-height:none;max-width:none}
+  .lb-stage{place-items:stretch}
+  #lbMedia{position:absolute;inset:0;display:grid;place-items:center}
+  .lb .aged{width:100%;height:100%;max-width:none;max-height:none;box-shadow:none;overflow:visible;display:grid;place-items:center}
+  .lb .aged img,.lb .aged video{width:100%;height:100%;max-width:none;max-height:none;object-fit:contain}
+  .lb figcaption{margin-top:0;padding:10px 16px 12px;gap:7px;max-height:58vh}
+  .lb .cap-r{gap:7px}
+  .lb-brand svg{width:96px;height:26px}
+  .lb-zoom{right:12px;bottom:calc(var(--capH,0px) + 10px)}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10.5" fill="none" stroke="#c79a5b" stroke-width="1.1"/><circle cx="16" cy="16" r="3.6" fill="#c79a5b" opacity=".9"/><path d="M16 5.5v7M16 19.5v7M5.5 16h7M19.5 16h7" stroke="#c79a5b" stroke-width=".7" opacity=".5"/></svg>
+    <div><a class="home" href="#/"><h1>时光相册</h1></a><p>只读 · 不修改图库</p></div>
+  </div>
+  <nav class="crumbs" id="crumbs"></nav>
+  <div class="controls">
+    <div class="fitbar" id="fitbar" role="group" aria-label="缩略图样式" hidden>
+      <button type="button" data-fit="prop">原比例</button>
+      <button type="button" data-fit="square">方形</button>
+    </div>
+    <div class="aging">
+      <button class="aging-btn" type="button" id="agingBtn" aria-expanded="false" aria-controls="agingPanel">包浆<b id="agingVal">100 / 100</b></button>
+      <div class="aging-panel" id="agingPanel" hidden>
+        <div class="ap-row">
+          <span class="ap-k">时间褪色</span>
+          <input type="range" id="strength" min="0" max="100" value="100" aria-label="时间褪色强度">
+          <output id="sv">100</output>
+        </div>
+        <div class="ap-row">
+          <span class="ap-k">胶片颗粒</span>
+          <input type="range" id="grain" min="0" max="100" value="40" aria-label="胶片颗粒强度">
+          <output id="grv">40</output>
+        </div>
+        <div class="ap-film">
+          <span class="ap-k">胶片模拟</span>
+          <div class="film-strip" id="filmStrip" role="group" aria-label="胶片模拟"></div>
+          <div class="film-str" id="filmStrRow">
+            <span class="ap-k">片种强度</span>
+            <input type="range" id="filmStr" min="0" max="100" value="100" aria-label="片种强度">
+            <output id="fsv">100</output>
+          </div>
+        </div>
+        <div class="ap-div"></div>
+        <div class="ap-block">
+          <span class="ap-k">品牌标识</span>
+          <div class="ap-seg" role="group" aria-label="品牌标识配色">
+            <button type="button" data-logo="mono">单色</button>
+            <button type="button" data-logo="color">彩色</button>
+          </div>
+        </div>
+        <div class="ap-div"></div>
+        <p class="ap-hint">包浆：时间褪色 + 按年份的胶片色，一条滑杆驱动，可叠在任何片种上。胶片颗粒独立一路。胶片模拟是片种选择，在详情页里改只影响当前浏览，退出即恢复。</p>
+      </div>
+    </div>
+    <select class="libsel" id="libSel" aria-label="选择图库"></select>
+    <div class="libmgr">
+      <button class="aging-btn" type="button" id="chkBtn" title="检测文件夹里新增/删除的照片">检测变化</button>
+      <button class="aging-btn" type="button" id="libBtn" aria-expanded="false" aria-controls="libPanel">库管理</button>
+      <div class="aging-panel lib-panel" id="libPanel" hidden>
+        <div id="libList"></div>
+        <div class="lib-add">
+          <input type="text" id="libPath" placeholder="粘贴文件夹或 .photoslibrary 路径" spellcheck="false">
+          <button type="button" id="libAddBtn">添加</button>
+        </div>
+        <p class="lib-msg" id="libMsg">添加一个文件夹或另一个「照片」图库即可；添加时会先扫一遍（只读，不改动原文件）。文件夹类型的日期取照片拍摄时间，读不到就用文件修改时间。</p>
+      </div>
+    </div>
+  </div>
+  <a class="logout" id="logout" href="/logout" title="退出登录" hidden>登出</a>
+</header>
+
+<main id="app">
+  <div class="boot" id="boot"><div class="ring"></div><p>正在读取照片图库</p><p style="font-size:11px;opacity:.7">首次索引约十秒，之后秒开</p></div>
+</main>
+
+<div class="lb" id="lb" hidden>
+  <div class="lb-tools" id="lbTools"></div>
+  <button class="btn lb-close" id="lbClose" aria-label="关闭">关闭</button>
+  <div class="lb-stage">
+    <button class="btn lb-arrow lb-prev" id="lbPrev" aria-label="上一张">‹</button>
+    <div id="lbMedia"></div>
+    <button class="btn lb-arrow lb-next" id="lbNext" aria-label="下一张">›</button>
+  <div class="lb-zoom">
+    <button class="btn" type="button" id="lbZoomOut" aria-label="缩小">－</button>
+    <button class="btn" type="button" id="lbZoomIn" aria-label="放大">＋</button>
+    <button class="btn" type="button" id="lbRotate" aria-label="向右旋转 90 度" title="向右旋转 90 度"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M12 4.2a7.8 7.8 0 1 0 7.8 7.8" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 1.2 9 4.4l3.4 2.9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+  </div>
+  </div>
+  <figcaption>
+    <div class="cap-l">
+      <div class="lb-date" id="lbDate"></div>
+      <div class="lb-meta" id="lbMeta"></div>
+      <div class="lb-place" id="lbPlace" hidden></div>
+    </div>
+    <div class="cap-r" id="lbExif" hidden><span class="lb-brand" id="lbBrand"></span><span class="exif-t" id="lbExifT"></span></div>
+  </figcaption>
+</div>
+
+<svg width="0" height="0" aria-hidden="true" style="position:absolute;left:-9999px;top:0">
+  <filter id="fk-portra" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fk-gold" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fk-superia" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fk-velvia" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fk-hp5" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fk-cinestill" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fl-portra" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fl-gold" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fl-superia" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fl-velvia" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fl-hp5" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+  <filter id="fl-cinestill" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncR type="table"/><feFuncG type="table"/><feFuncB type="table"/></feComponentTransfer></filter>
+</svg>
+
+<script>
+(() => {
+"use strict";
+const NOW = Date.now();
+const AGING_SPAN = 12;     // 年：到这个年数基本完全褪色
+const AGING_DEAD = 0.45;   // 年内：太新的照片不动
+const DOW = ["一","二","三","四","五","六","日"];
+
+
+const state = { lib:0, strength:1, grain:.4, tree:null, statics:null, stream:null, lb:null, cal:null,
+  fit: "prop", film:1, lbDir:0, cams:[], logo:"mono" };
+state.logo = (localStorage.getItem("album-logo")==="color") ? "color" : "mono";
+state.fit = (localStorage.getItem("album-fit")==="square") ? "square" : "prop";
+
+/* ---------- 工具 ---------- */
+const $ = (s,r=document)=>r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
+const fmt = n => n.toLocaleString("zh-CN");
+const pad = n => (n<10?"0":"")+n;
+const tsOf = (y,m,d,h=12) => Math.floor(new Date(y,(m||1)-1,d||1,h).getTime()/1000);
+const api = async (u) => { const r = await fetch(u); if(!r.ok) throw new Error(u+" "+r.status); return r.json(); };
+
+/* 时间包浆：离今天越远，褪色越深 */
+function aging(tsSec){
+  const age = (NOW/1000 - tsSec)/(365.25*86400);
+  if(age <= AGING_DEAD) return 0;
+  return Math.min(1, Math.pow(Math.min(age/AGING_SPAN, 1.15), 0.86));
+}
+/* 第二维度：年代胶片色。不是严格还原某款胶片，只取那个年代的色彩性格。 */
+const FILM = [
+  { y:1996, n:"1980s 胶片", sepia:62, desat:44, con:-13, bri:-3, hue:-6,  hi:[255,214,152], sh:[96,64,30],   hiop:.46, shop:.46, grain:.50 },
+  { y:2006, n:"1990s 胶片", sepia:46, desat:34, con:-2,  bri:-1, hue:-13, hi:[255,190,160], sh:[34,82,96],   hiop:.40, shop:.42, grain:.42 },
+  { y:2014, n:"2000s 数码", sepia:22, desat:22, con:12,  bri:0,  hue:5,   hi:[204,224,242], sh:[42,80,98],   hiop:.26, shop:.34, grain:.24 },
+  { y:2021, n:"2010s 微褪", sepia:16, desat:15, con:5,   bri:0,  hue:2,   hi:[242,230,198], sh:[68,74,58],   hiop:.18, shop:.20, grain:.14 },
+  { y:9999, n:"当下",      sepia:8,  desat:8,  con:0,   bri:0,  hue:0,   hi:[250,238,220], sh:[80,72,60],   hiop:.09, shop:.09, grain:.06 },
+];
+/* 同一年代内部再随机挑一种色偏：暖调 / 冷调 / 中性 */
+const VARIANTS = [
+  { ds:-5, ddesat:-6, dhue:-5, hi:[8,5,-3],  sh:[0,3,9]  },
+  { ds:5,  ddesat:4,  dhue:7,  hi:[-9,0,11], sh:[11,0,-9] },
+  { ds:0,  ddesat:0,  dhue:0,  hi:[0,0,0],   sh:[0,0,0]  }
+];
+function hash32(str){
+  let h = 2166136261;
+  for(let i=0;i<str.length;i++){ h ^= str.charCodeAt(i); h = (h*16777619) >>> 0; }
+  return h >>> 0;
+}
+function filmOf(year){
+  for(let i=0;i<FILM.length;i++) if(year < FILM[i].y) return FILM[i];
+  return FILM[FILM.length-1];
+}
+function filmLook(ts, seed){
+  const year = new Date(ts*1000).getFullYear();
+  const f = filmOf(year);
+  const h = hash32(seed || String(ts));
+  const v = VARIANTS[h % VARIANTS.length];
+  const j1 = ((h % 997)/997 - .5), j2 = (((h>>9) % 991)/991 - .5), j3 = (((h>>18) % 983)/983 - .5);
+  return {
+    name: f.n,
+    sepia: f.sepia + v.ds + j1*10,
+    desat: f.desat + v.ddesat + j2*9,
+    con: f.con + j3*4,
+    hue: f.hue + v.dhue + j3*9,
+    hi: [f.hi[0]+v.hi[0], f.hi[1]+v.hi[1], f.hi[2]+v.hi[2]],
+    sh: [f.sh[0]+v.sh[0], f.sh[1]+v.sh[1], f.sh[2]+v.sh[2]],
+    hiop: f.hiop + j2*.12,
+    shop: f.shop + j1*.12,
+    grain: f.grain + j1*.12
+  };
+}
+const WARM_HI = [255,231,186], WARM_SH = [54,35,14];
+const clamp8 = v => Math.max(0, Math.min(255, Math.round(v)));
+function mixRGB(a, b, k){
+  k = Math.max(0, Math.min(1, k));
+  return clamp8(a[0]*(1-k)+b[0]*k) + "," + clamp8(a[1]*(1-k)+b[1]*k) + "," + clamp8(a[2]*(1-k)+b[2]*k);
+}
+/* 包浆 = 时间褪色 + 年代胶片色，同一条滑杆驱动；可再叠片种 */
+function paint(scope){
+  const root = scope||document;
+  const s = state.strength;
+  root.querySelectorAll("[data-ts]").forEach(el=>{
+    const ts = +el.dataset.ts;
+    const t = aging(ts) * s;
+    const L = filmLook(ts, el.dataset.u || "");
+    const e = s;
+    const k = (t + e) ? e/(t + e) : 0;   // 年代色占比
+    el.style.setProperty("--t", t.toFixed(3));
+    el.style.setProperty("--hi", mixRGB(WARM_HI, L.hi, k));
+    el.style.setProperty("--sh", mixRGB(WARM_SH, L.sh, k));
+    el.style.setProperty("--hiop", Math.min(.34, t*0.20 + e*Math.max(0,L.hiop)*0.85).toFixed(3));
+    el.style.setProperty("--shop", Math.min(.44, t*0.22 + e*Math.max(0,L.shop)*0.85).toFixed(3));
+    el.style.setProperty("--gop", Math.min(1, state.grain).toFixed(3));
+    const m = el.querySelector("img,video");
+    const ft = effFilmFor(el);          /* 片种作为底，包浆（褪色 + 年代色）叠在上面 */
+    const inLb = !!(el.closest && el.closest("#lb"));
+    if(m){
+      m.style.filter = (ft !== "nc" ? filmFilterCSS(ft, inLb) + " " : "")
+        + "sepia(" + Math.min(78, t*24 + e*L.sepia*0.85).toFixed(1) + "%) saturate(" + Math.max(0, 100 - t*10 - e*L.desat*0.45).toFixed(1)
+        + "%) contrast(" + (100 - t*5 + e*L.con).toFixed(1) + "%) brightness(" + (100 + e*Math.min(0,L.bri||0)*0.6).toFixed(1)
+        + "%) hue-rotate(" + (e*L.hue).toFixed(1) + "deg)";
+    }
+  });
+}
+/* ---------- 相机品牌标识 ---------- */
+/* 官方矢量图标（Simple Icons 收录的 17 个品牌，viewBox 0 0 24 24，单色 path）。
+   单色档用纸色，彩色档用品牌色；源文件在 品牌标识/ 目录（每品牌 mono / color 两个透明底 SVG）。
+   未收录的品牌（Canon / Ricoh / Olympus / GoPro / Casio / realme / Hasselblad / Sigma / Xiaoyi）
+   不出标识，只显示机型文字。 */
+const BRANDS = {
+  apple:{c:"#aeb5bc",g:1},      sony:{t:"SONY",c:"#dcdcdc"},   canon:{c:"#cc0000",t:"Canon"},
+  nikon:{c:"#ffe100",t:"Nikon"},fujifilm:{c:"#00a651"},panasonic:{c:"#1e6df2",t:"Panasonic"},
+  leica:{c:"#e30613",t:"Leica",d:1}, pentax:{c:"#d50032"}, ricoh:{c:"#c8102e"},
+  olympus:{t:"OLYMPUS",c:"#0f6fd0"},        hasselblad:{t:"HASSELBLAD",c:"#e8762c"}, sigma:{c:"#8f979e"},
+  samsung:{c:"#2a3fd0",t:"Samsung"}, huawei:{c:"#cf0a2c",t:"Huawei"}, xiaomi:{c:"#ff6900",t:"Xiaomi"},
+  google:{c:"#4285f4",t:"Pixel"},    dji:{t:"DJI",c:"#b9bec4"},    gopro:{c:"#00a0df",t:"GoPro"},
+  casio:{c:"#1f4fd0",t:"Casio"},     oppo:{c:"#1ba97a",t:"OPPO"}, vivo:{c:"#415fff",t:"vivo"},
+  oneplus:{c:"#eb0029",t:"OnePlus"}, motorola:{c:"#3ba3ff",t:"Motorola"},
+  nokia:{c:"#124191",t:"NOKIA"},     realme:{c:"#ffc915",t:"realme"},
+  meizu:{c:"#00a0e9",t:"Meizu"},     xiaoyi:{c:"#ff5b32",t:"Xiaoyi"}
+};
+const BRAND_RULES = [
+  [/iphone|ipad|^apple$|apple inc/i, "apple"],
+  [/fujifilm|finepix/i, "fujifilm"],
+  [/pentax/i, "pentax"],
+  [/ricoh/i, "ricoh"],
+  [/panasonic|lumix/i, "panasonic"],
+  [/xiaomi|^mi |redmi|^\s*mi$/i, "xiaomi"],
+  [/sony|ilce|ilca|dsc-/i, "sony"],
+  [/canon|eos\b|powershot/i, "canon"],
+  [/nikon|^z [0-9]/i, "nikon"],
+  [/olympus|om-?d|om system/i, "olympus"],
+  [/leica/i, "leica"],
+  [/hasselblad/i, "hasselblad"],
+  [/sigma/i, "sigma"],
+  [/samsung|sm-g|sm-n/i, "samsung"],
+  [/huawei|honor|mrd-|lya-/i, "huawei"],
+  [/google|pixel/i, "google"],
+  [/dji|mavic|osmo/i, "dji"],
+  [/gopro|hero\d/i, "gopro"],
+  [/casio|exilim/i, "casio"],
+  [/oppo|findx|pdam|pclm/i, "oppo"],
+  [/vivo|iqoo/i, "vivo"],
+  [/oneplus/i, "oneplus"],
+  [/motorola|moto /i, "motorola"],
+  [/nokia/i, "nokia"],
+  [/realme/i, "realme"],
+  [/meizu/i, "meizu"],
+  [/xiaoyi|ydxj/i, "xiaoyi"]
+];
+const CAM_LOGOS = {
+  pentax:{d:"M3.60 1.60 L68.60 1.60 L81.60 3.60 L82.60 5.60 L85.60 5.60 L86.60 7.60 L91.60 9.60 L98.60 20.60 L98.60 25.60 L100.60 28.60 L100.60 70.60 L96.60 81.60 L88.60 89.60 L80.60 91.60 L78.60 93.60 L38.60 94.60 L36.60 123.60 L1.60 122.60 L1.60 3.60 L3.60 2.60 ZM113.60 1.60 L197.60 2.60 L196.60 24.60 L146.60 25.60 L146.60 49.60 L189.60 50.60 L189.60 72.60 L146.60 73.60 L146.60 101.60 L196.60 101.60 L196.60 123.60 L112.60 123.60 L113.60 2.60 ZM213.60 1.60 L246.60 2.60 L274.60 70.60 L276.60 70.60 L276.60 2.60 L306.60 2.60 L306.60 123.60 L270.60 122.60 L246.60 61.60 L243.60 61.60 L243.60 123.60 L212.60 123.60 L213.60 2.60 ZM319.60 1.60 L424.60 2.60 L424.60 25.60 L388.60 26.60 L388.60 123.60 L353.60 123.60 L353.60 26.60 L319.60 25.60 L319.60 2.60 ZM450.60 1.60 L477.60 1.60 L480.60 3.60 L480.60 7.60 L482.60 9.60 L482.60 13.60 L484.60 15.60 L484.60 19.60 L486.60 21.60 L486.60 25.60 L488.60 27.60 L488.60 31.60 L490.60 33.60 L490.60 37.60 L492.60 39.60 L492.60 43.60 L494.60 45.60 L494.60 49.60 L496.60 51.60 L496.60 55.60 L498.60 57.60 L498.60 61.60 L504.60 75.60 L504.60 79.60 L508.60 86.60 L508.60 91.60 L510.60 93.60 L514.60 109.60 L518.60 116.60 L519.60 123.60 L486.60 123.60 L484.60 113.60 L482.60 111.60 L482.60 106.60 L479.60 104.60 L447.60 105.60 L442.60 123.60 L410.60 122.60 L414.60 113.60 L418.60 96.60 L420.60 94.60 L420.60 90.60 L422.60 88.60 L422.60 83.60 L424.60 81.60 L426.60 71.60 L428.60 69.60 L428.60 64.60 L430.60 62.60 L432.60 52.60 L436.60 44.60 L436.60 39.60 L438.60 38.60 L442.60 20.60 L444.60 18.60 L448.60 2.60 L450.60 2.60 ZM523.60 1.60 L559.60 1.60 L576.60 37.60 L578.60 37.60 L578.60 35.60 L580.60 34.60 L584.60 21.60 L586.60 20.60 L593.60 2.60 L627.60 1.60 L627.60 5.60 L624.60 8.60 L622.60 15.60 L620.60 16.60 L616.60 26.60 L614.60 27.60 L614.60 30.60 L612.60 31.60 L612.60 34.60 L610.60 35.60 L610.60 38.60 L604.60 46.60 L600.60 57.60 L598.60 58.60 L598.60 63.60 L602.60 67.60 L604.60 73.60 L608.60 77.60 L610.60 83.60 L614.60 87.60 L616.60 93.60 L620.60 97.60 L634.60 123.60 L598.60 123.60 L578.60 83.60 L576.60 83.60 L576.60 85.60 L574.60 86.60 L574.60 90.60 L572.60 91.60 L570.60 99.60 L568.60 100.60 L568.60 104.60 L566.60 105.60 L559.60 123.60 L522.60 123.60 L524.60 116.60 L526.60 115.60 L530.60 105.60 L532.60 104.60 L532.60 101.60 L534.60 100.60 L536.60 94.60 L538.60 93.60 L538.60 90.60 L540.60 89.60 L542.60 83.60 L544.60 82.60 L544.60 79.60 L548.60 75.60 L548.60 72.60 L550.60 71.60 L555.60 61.60 L554.60 56.60 L552.60 55.60 L542.60 35.60 L538.60 31.60 L538.60 28.60 L534.60 24.60 L534.60 21.60 L530.60 17.60 L523.60 2.60 ZM39.60 23.60 L37.60 24.60 L37.60 69.60 L58.60 69.60 L64.60 63.60 L64.60 29.60 L56.60 23.60 L40.60 23.60 ZM464.60 43.60 L462.60 44.60 L462.60 50.60 L460.60 52.60 L458.60 66.60 L456.60 68.60 L456.60 73.60 L454.60 76.60 L454.60 83.60 L474.60 83.60 L474.60 77.60 L472.60 75.60 L472.60 69.60 L470.60 66.60 L465.60 43.60 Z",v:"0.0 0.0 636.2 125.2"},
+  apple:{d:"M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701",v:"1.85 -0.35 20.29 24.7"},
+  dji:{d:"M19.2 7.8a716.856 716.856 0 0 0-1.232 4.63c-.202.772-.401 1.544-.634 2.308-.226.743-.504 1.535-.91 2.21-.422.703-.969 1.253-1.726 1.604-.3.137-.615.24-.939.306-.46.09-.926.146-1.394.165-1.163.065-3.628.056-4.79.056l.713-2.64c.539 0 1.078.002 1.617-.013.52-.014 1.092-.042 1.605-.163.56-.133.984-.36 1.355-.817.337-.416.564-.935.75-1.424.34-.893.688-2.173.934-3.093.277-1.041.544-2.085.812-3.129zm4.8 0-2.072 7.68h-3.84l2.073-7.68ZM11.339 4.92h3.84c-.403 1.5-.805 2.999-1.212 4.496-.283 1.044-.565 2.088-.872 3.124-.135.452-.269.903-.445 1.342-.141.352-.3.666-.591.93a1.908 1.908 0 0 1-.734.405c-.356.112-.717.154-1.085.184-.53.043-1.06.054-1.591.063-1.991.02-3.983.02-5.974-.001a21.408 21.408 0 0 1-.954-.034 5.319 5.319 0 0 1-.632-.07 1.851 1.851 0 0 1-.412-.119c-.44-.192-.664-.575-.677-1.043 0-.263.032-.525.093-.78.076-.367.171-.728.265-1.09.179-.691.506-1.966.762-2.638.2-.526.464-1.05.966-1.382.28-.186.576-.285.901-.35.241-.05.483-.075.728-.093.41-.03.82-.04 1.23-.047.582-.01 1.165-.013 1.748-.015L8.148 7.8h1.454l-.518 1.92c-.864 0-1.728-.002-2.593.003-.252.001-.504 0-.756.016a.968.968 0 0 0-.264.042c-.113.04-.17.11-.22.213-.073.15-.115.31-.162.468a84.804 84.804 0 0 0-.503 1.857c-.035.14-.07.28-.1.42-.022.099-.04.197-.05.298-.01.11-.014.242.053.345.068.103.182.127.29.143.12.018.241.021.363.025.199.006.398.007.597.008.544.003 1.089.003 1.633 0 .25-.002.501-.004.752-.014.173-.007.343-.013.513-.054.13-.031.23-.08.318-.186.056-.071.1-.15.133-.235.088-.209.15-.425.213-.641.245-.83.466-1.665.692-2.499l.675-2.503.67-2.505h3.84z",v:"-0.35 4.57 24.7 14.86"},
+  fujifilm:{d:"M18.288 10v3.129c0 .204.096.313.3.313h1.034v.352c0 .04-.028.068-.068.068h-1.672c-.518 0-.6-.284-.6-.544v-3.1c0-.148.056-.216.232-.216h.774m-1.916 0v3.656c0 .164-.068.204-.204.204h-.788v-3.655c0-.125.04-.205.216-.205h.776M0 10.532c0-.3 0-.53.49-.53h2.12v.366c0 .028-.012.054-.054.054H1.28c-.162 0-.244.083-.244.26v.979h1.496v.393c0 .04-.028.054-.056.054h-1.44v1.55c0 .15-.082.204-.246.204H0v-3.33m4.148-.531v2.95c0 .26.04.434.216.53.232.136.64.136.884 0 .164-.096.232-.244.232-.53v-2.76c0-.122.04-.19.218-.19h.774v2.853c0 .667-.42.94-.788 1.035a3.592 3.592 0 0 1-1.7 0c-.558-.164-.816-.49-.816-1.035v-2.663c0-.122.04-.204.19-.204h.79M22.872 10c-.19 0-.314.094-.354.272l-.626 2.663h-.014L21.212 10h-.884c-.176 0-.23.08-.23.23v3.644h.38c.054 0 .08-.026.08-.094v-3.06h.056l.802 3.14h.53c.204 0 .272-.08.328-.272l.72-2.868h.054v3.14h.708c.176 0 .244-.069.244-.23V10h-1.128m-11.708 2.093h-.992v1.767h.788c.136 0 .204-.04.204-.205v-1.562m-.054-.747c.04-.028.054-.056.054-.11V10h-.776c-.176 0-.216.08-.216.204v1.875l.938-.733m-3.4 2.216c.436-.055.572-.314.572-.695v-2.663c0-.164.08-.204.19-.204h.788v2.513c0 .612-.136.927-.49 1.198-.19.136-.516.3-1.25.3-.408 0-.6-.028-.626-.028-.04-.014-.054-.028-.054-.056v-.326c.204-.014.584 0 .87-.04M12.674 10c-.49 0-.49.244-.49.53v.992c0 .028-.014.028-.014.04l-.68.532h.694v1.766h.788c.164 0 .244-.054.244-.204v-1.562h1.442c.028 0 .054-.014.054-.056v-.394h-1.496v-.98c0-.176.082-.256.26-.256h1.278c.04 0 .054-.028.054-.056V10h-2.134",v:"-0.35 9.63 24.7 4.73"},
+  google:{d:"M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z",v:"-0.07 -0.35 24.14 24.7"},
+  huawei:{d:"M3.67 6.14S1.82 7.91 1.72 9.78v.35c.08 1.51 1.22 2.4 1.22 2.4 1.83 1.79 6.26 4.04 7.3 4.55 0 0 .06.03.1-.01l.02-.04v-.04C7.52 10.8 3.67 6.14 3.67 6.14zM9.65 18.6c-.02-.08-.1-.08-.1-.08l-7.38.26c.8 1.43 2.15 2.53 3.56 2.2.96-.25 3.16-1.78 3.88-2.3.06-.05.04-.09.04-.09zm.08-.78C6.49 15.63.21 12.28.21 12.28c-.15.46-.2.9-.21 1.3v.07c0 1.07.4 1.82.4 1.82.8 1.69 2.34 2.2 2.34 2.2.7.3 1.4.31 1.4.31.12.02 4.4 0 5.54 0 .05 0 .08-.05.08-.05v-.06c0-.03-.03-.05-.03-.05zM9.06 3.19a3.42 3.42 0 00-2.57 3.15v.41c.03.6.16 1.05.16 1.05.66 2.9 3.86 7.65 4.55 8.65.05.05.1.03.1.03a.1.1 0 00.06-.1c1.06-10.6-1.11-13.42-1.11-13.42-.32.02-1.19.23-1.19.23zm8.299 2.27s-.49-1.8-2.44-2.28c0 0-.57-.14-1.17-.22 0 0-2.18 2.81-1.12 13.43.01.07.06.08.06.08.07.03.1-.03.1-.03.72-1.03 3.9-5.76 4.55-8.64 0 0 .36-1.4.02-2.34zm-2.92 13.07s-.07 0-.09.05c0 0-.01.07.03.1.7.51 2.85 2 3.88 2.3 0 0 .16.05.43.06h.14c.69-.02 1.9-.37 3-2.26l-7.4-.25zm7.83-8.41c.14-2.06-1.94-3.97-1.94-3.98 0 0-3.85 4.66-6.67 10.8 0 0-.03.08.02.13l.04.01h.06c1.06-.53 5.46-2.77 7.28-4.54 0 0 1.15-.93 1.21-2.42zm1.52 2.14s-6.28 3.37-9.52 5.55c0 0-.05.04-.03.11 0 0 .03.06.07.06 1.16 0 5.56 0 5.67-.02 0 0 .57-.02 1.27-.29 0 0 1.56-.5 2.37-2.27 0 0 .73-1.45.17-3.14z",v:"-0.35 2.6 24.7 18.79"},
+  leica:{d:"M9.42 10.954c.198.011.35.146.343.29-.033.94-1.19.795-1.19.795s.17-1.126.846-1.085zm9.313 2.064c.794 0 .952-1.605.952-1.64a.41.41 0 0 0-.423-.398c-.66 0-.9 1.203-.9 1.508 0 .116.007.53.37.53zm-9.949-5.08c.036-.318-.12-.662-.555-.662-1.06 0-1.509 2.963-1.509 2.963s1.853-.438 2.064-2.301zm-6.244 5.82c-.207.021-.423.114-.423.344 0 .139.235.382.608.37.49-.014 1.085-.475 1.085-.475s-.506-.207-1.085-.239a1.026 1.026 0 0 0-.185 0zM24 12.003C24 18.628 18.627 24 12 24 5.37 24 0 18.628 0 12.003 0 5.374 5.371 0 12 0c6.627 0 12 5.374 12 12.003zM11.933 9.446c0 .446.377.555.794.555.418 0 .82-.18.82-.635 0-.456-.48-.555-.82-.555-.471 0-.794.193-.794.635zM9.366 10.53c-1.41 0-2.407.866-2.407 1.904 0 .948.808 1.35 1.852 1.35 1.184 0 2.354-.714 2.354-.714s.071.714 1.006.714c.964 0 1.72-.714 1.72-.714s.417.687 1.376.687c.98 0 1.72-.793 1.72-.793s.272.74 1.243.74c.759 0 1.164-.476 1.164-.476s.212.477.873.477c.808 0 1.402-.556 1.402-.556l-.132-.476s-.307.238-.529.238c-.168 0-.265-.137-.265-.291 0-.347.556-2.064.556-2.064l-1.35.026-.052.212s-.201-.37-.9-.37c-1.352 0-2.085 1.166-2.116 1.852-.007.149-.027.158-.027.158-.032.036-.497.583-1.085.583-.47 0-.555-.384-.555-.635 0-.273.233-1.35.873-1.35.348 0 .555.291.555.291l.186-.608s-.292-.236-.9-.238c-1.308-.001-2.19.967-2.222 1.852-.007.132-.03.176-.027.185-.043.053-.35.423-.767.423-.286 0-.291-.219-.291-.317 0-.135.555-2.064.555-2.064l-1.481.026-.503 1.879s-.826.581-1.958.661c-.584.04-.794-.32-.794-.529v-.08c.001 0 .246.027.424.027.14 0 1.878-.134 1.878-1.19 0-.605-.613-.82-1.376-.82zm12.568 3.889-.132-.476s-3.096 1.078-9.022 1.005c-4.089-.05-7.224-1.243-7.224-1.243s.119-.212.185-.344c.41-.835.9-2.514.9-2.514s2.805-.785 2.805-3.016c0-.706-.674-1.162-1.323-1.19-2.264-.089-2.877 3.128-3.017 3.677-.007.039-.026.053-.026.053-.698-.095-1.085-.238-1.085-.238l-.159.45c.471.223 1.165.29 1.165.29-.136.865-.82 2.488-.82 2.488s-.608-.186-1.376-.186c-1 0-1.35.47-1.376.768-.066.77.911 1.137 1.587 1.137 1.32 0 2.011-.714 2.011-.714s3.695 1.402 7.567 1.402c5.069 0 9.34-1.35 9.34-1.35z",v:"-0.35 -0.35 24.7 24.7"},
+  meizu:{d:"M20.045 18.818h3.546A.41.41 0 0 0 24 18.41v-3.545a.41.41 0 0 0-.41-.41h-3.545a.41.41 0 0 0-.409.41v3.545c0 .226.184.41.41.41zM13.8 12.11a.095.095 0 0 1-.163-.068V5.591a.41.41 0 0 0-.409-.41H10.59a.545.545 0 0 0-.385.16L.16 15.387a.545.545 0 0 0-.16.385v2.638c0 .226.183.41.41.41h2.637a.547.547 0 0 0 .385-.16l6.769-6.769a.096.096 0 0 1 .163.068v6.451c0 .226.183.41.409.41h2.638a.547.547 0 0 0 .385-.16L23.84 8.613A.545.545 0 0 0 24 8.23V5.59a.41.41 0 0 0-.41-.41h-2.637a.546.546 0 0 0-.386.16z",v:"-0.35 4.81 24.7 14.39"},
+  motorola:{d:"M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12C24.002 5.375 18.632.002 12.007 0H12zm7.327 18.065s-.581-2.627-1.528-4.197c-.514-.857-1.308-1.553-2.368-1.532-.745 0-1.399.423-2.2 1.553-.469.77-.882 1.573-1.235 2.403 0 0-.29-.675-.63-1.343a8.038 8.038 0 0 0-.605-1.049c-.804-1.13-1.455-1.539-2.2-1.553-1.049-.021-1.854.675-2.364 1.528-.948 1.574-1.528 4.197-1.528 4.197h-.864l4.606-15.12 3.56 11.804.024.021.024-.021 3.56-11.804 4.61 15.113h-.862z",v:"-0.35 -0.35 24.7 24.7"},
+  nikon:{d:"M8.267 8.681c-.69 0-1.054.463-1.054.873 0 .144.032.653.949.653.762 0 1.057-.488 1.057-.854 0-.244-.2-.672-.952-.672zm-6.87.215L0 15.146h1.72c.194-1 .455-2.056.711-3.138l1.206 3.136H5.27L6.681 8.9H5l-.715 3.176-1.18-3.18Zm8.587.004L8.6 15.144h1.663l.558-2.375.703 2.375h1.705l-.707-2.508 1.715-2.08h-1.91l-1.38 1.664.743-3.32zm6.608 1.465c-2.582 0-2.962 2.01-3.034 2.379-.19.93.02 2.137 1.235 2.457.8.21 2.051.187 2.855-.47.736-.6 1.1-1.619 1.088-2.575-.012-.92-.79-1.791-2.144-1.791zm6.193.072c-.573.038-1.156.35-1.486.807.044-.188.088-.404.14-.658h-1.7l-.999 4.558h1.695l.563-2.586c.104-.476.488-.68.826-.591.146.04.35.15.281.548l-.574 2.63h1.674l.767-3.51a.96.96 0 0 0-.627-1.14 1.594 1.594 0 0 0-.56-.058zm-15.66.121-1.02 4.586h1.676l1.022-4.586zm9.23 1.104c.372-.002.472.218.44.426-.09.545-.245 1.081-.362 1.539-.082.254-.321.4-.601.4-.286 0-.458-.178-.432-.406.04-.384.286-1.357.356-1.549.12-.334.451-.408.6-.41z",v:"-0.35 8.32 24.7 7.36"},
+  nokia:{d:"M16.59 9.348v5.304h.796V9.348Zm-8.497-.09c-1.55 0-2.752 1.127-2.752 2.742 0 1.687 1.202 2.742 2.752 2.742 1.55 0 2.754-1.055 2.751-2.742a2.72 2.72 0 0 0-2.751-2.742ZM10.05 12c0 1.195-.876 1.987-1.957 1.987-1.082 0-1.958-.792-1.958-1.987 0-1.174.876-1.987 1.958-1.987 1.08 0 1.957.813 1.957 1.987zM0 9.176v5.476h.812v-3.619l4.218 3.79v-1.135zM11.442 12l2.952 2.652h1.184L12.622 12l2.956-2.652h-1.184ZM24 14.652h-.875l-.64-1.175h-2.898l-.64 1.175h-.875l1.06-1.958h2.937l-1.465-2.72.432-.798Z",v:"-0.35 8.84 24.7 6.33"},
+  oneplus:{d:"M0 3.74V24h20.26V12.428h-2.256v9.317H2.254V5.995h9.318V3.742zM18.004 0v3.74h-3.758v2.256h3.758v3.758h2.255V5.996H24V3.74h-3.758V0zm-6.45 18.756V8.862H9.562c0 .682-.228 1.189-.577 1.504-.367.297-.91.437-1.556.437h-.245v1.625h2.133v6.31h2.237z",v:"-0.35 -0.35 24.7 24.7"},
+  oppo:{d:"M2.85 12.786h-.001C1.639 12.774.858 12.2.858 11.321s.781-1.452 1.99-1.465c1.21.013 1.992.588 1.992 1.465s-.782 1.453-1.99 1.465zm.034-3.638h-.073C1.156 9.175 0 10.068 0 11.32s1.156 2.147 2.811 2.174h.073c1.655-.027 2.811-.921 2.811-2.174S4.54 9.175 2.885 9.148zm18.27 3.638c-1.21-.012-1.992-.587-1.992-1.465s.782-1.452 1.991-1.465c1.21.013 1.991.588 1.991 1.465s-.781 1.453-1.99 1.465zm.035-3.638h-.073c-1.655.027-2.811.92-2.811 2.173s1.156 2.147 2.81 2.174h.074C22.844 13.468 24 12.574 24 11.32s-1.156-2.146-2.811-2.173zm-6.126 3.638c-1.21-.012-1.99-.587-1.99-1.465s.78-1.452 1.99-1.465c1.21.013 1.991.588 1.991 1.465s-.781 1.453-1.99 1.465zm.036-3.638h-.073c-.789.013-1.464.222-1.955.574v-.37h-.857v5.5h.857v-1.931c.49.351 1.166.56 1.954.574h.074c1.655-.027 2.81-.921 2.81-2.174s-1.155-2.146-2.81-2.173zm-6.144 3.638c-1.21-.012-1.99-.587-1.99-1.465s.78-1.452 1.99-1.465c1.21.013 1.991.588 1.991 1.465s-.781 1.453-1.99 1.465zm.037-3.638H8.92c-.789.013-1.464.222-1.955.574v-.37h-.856v5.5h.856v-1.931c.491.351 1.166.56 1.955.574a3.728 3.728 0 0 0 .073 0c1.655-.027 2.811-.921 2.811-2.174s-1.156-2.146-2.81-2.173z",v:"-0.35 8.79 24.7 6.42"},
+  panasonic:{d:"M3.157 11.4852c.0399-.6914-.4884-1.2842-1.1798-1.324H0v3.58h1.084v-1.1h.66c.166 0 .333-.02.496-.059.497-.103.87-.52.917-1.025v-.072zm-1.081.005a.35.35 0 0 1-.337.301c-.081.007-.15.007-.23.007h-.425v-.777h.632a.36.36 0 0 1 .36.326.658.658 0 0 1 0 .143zm3.6781 1.45c0-.278-.01-.511-.01-.786a1.654 1.654 0 0 0-.057-.42.666.666 0 0 0-.332-.43 1.046 1.046 0 0 0-.316-.118 2.63 2.63 0 0 0-1.065-.02c-.1.015-.197.043-.29.082a.77.77 0 0 0-.455.5.597.597 0 0 0-.024.261.124.124 0 0 0 .014.048l.86.02a.386.386 0 0 1 .025-.153.262.262 0 0 1 .162-.162.49.49 0 0 1 .342 0 .23.23 0 0 1 .156.157.15.15 0 0 1-.02.13.22.22 0 0 1-.1.078l-.074.024c-.113.03-.228.055-.343.075a6.7928 6.7928 0 0 0-.276.05 3.2483 3.2483 0 0 0-.365.095.787.787 0 0 0-.295.173.621.621 0 0 0-.205.393.792.792 0 0 0 .012.299.71.71 0 0 0 .509.54c.277.084.574.068.841-.043a.83.83 0 0 0 .344-.248c.018.059.038.117.057.176.012.032.03.061.051.087h.948a.414.414 0 0 1-.068-.207c-.0138-.2-.0225-.4004-.026-.601zm-.956-.088a.431.431 0 0 1-.067.193.406.406 0 0 1-.182.145.627.627 0 0 1-.21.054.453.453 0 0 1-.163-.013.244.244 0 0 1-.12-.074.204.204 0 0 1-.057-.106.17.17 0 0 1 .064-.174.314.314 0 0 1 .105-.063c.095-.035.19-.066.288-.093.118-.034.232-.078.342-.131a.907.907 0 0 1 0 .262zm3.262-1.712a1.038 1.038 0 0 0-.755.054 1.662 1.662 0 0 0-.393.262l-.023-.27h-.919v2.559h.982v-1.42a.413.413 0 0 1 .06-.221.383.383 0 0 1 .482-.16c.081.032.142.1.167.183.013.043.02.087.02.131v1.484h1.01v-1.652a1.205 1.205 0 0 0-.06-.394.822.822 0 0 0-.572-.558l.001.002zm5.9501 1.25a1.076 1.076 0 0 0-.42-.231l-.106-.03a4.543 4.543 0 0 0-.58-.122 1.8502 1.8502 0 0 1-.156-.03.3.3 0 0 1-.068-.024.117.117 0 0 1-.059-.152v-.008a.222.222 0 0 1 .131-.105.491.491 0 0 1 .316 0c.107.03.178.133.17.244h.902a.9.9 0 0 0-.055-.31.551.551 0 0 0-.184-.255.848.848 0 0 0-.242-.138 1.196 1.196 0 0 0-.262-.073 2.627 2.627 0 0 0-.642-.037 2.033 2.033 0 0 0-.366.054 1.082 1.082 0 0 0-.444.211.693.693 0 0 0-.28.526.72.72 0 0 0 .052.316.675.675 0 0 0 .393.393c.09.036.183.064.278.082l.554.104c.07.01.138.028.205.051.06.018.103.07.113.131a.19.19 0 0 1-.052.176.304.304 0 0 1-.17.086.492.492 0 0 1-.262-.025.368.368 0 0 1-.105-.061.263.263 0 0 1-.089-.131.41.41 0 0 1-.02-.138h-.932v.055a.773.773 0 0 0 .256.555.99.99 0 0 0 .426.24c.329.098.676.12 1.014.065.16-.023.313-.073.455-.148a.935.935 0 0 0 .176-.118.778.778 0 0 0 .246-.852.632.632 0 0 0-.193-.302v.001zm6.1982-2.226h.957v.676h-.957v-.676zm0 1.024h.957v2.558h-.957v-2.558zm2.872 1.505a1.1666 1.1666 0 0 1-.018.154.393.393 0 0 1-.096.199.299.299 0 0 1-.185.098.364.364 0 0 1-.316-.1.53.53 0 0 1-.152-.26 1.168 1.168 0 0 1 .012-.703.41.41 0 0 1 .178-.232.36.36 0 0 1 .407.017c.092.068.153.17.17.284h.874a.78.78 0 0 0-.09-.417 1.12 1.12 0 0 0-.724-.564 1.711 1.711 0 0 0-.806-.02c-.48.094-.863.456-.984.93a1.383 1.383 0 0 0-.031.621c.023.149.075.291.152.42.095.171.227.32.385.435.189.148.416.239.655.262.18.02.36.012.538-.025a1.24 1.24 0 0 0 .685-.38.928.928 0 0 0 .263-.719h-.917zm-3.704-1.553a1.038 1.038 0 0 0-.755.054 1.656 1.656 0 0 0-.393.262l-.031-.27h-.9181v2.559h.984v-1.428a.425.425 0 0 1 .06-.221.393.393 0 0 1 .484-.16c.08.033.14.1.164.183a.453.453 0 0 1 .021.14v1.483h1.016v-1.652a1.2 1.2 0 0 0-.06-.394.822.822 0 0 0-.572-.558v.002zm-7.8792 1.8c0-.278-.01-.511-.012-.786 0-.142-.018-.283-.054-.42a.675.675 0 0 0-.333-.43 1.056 1.056 0 0 0-.315-.118 2.637 2.637 0 0 0-1.067-.02c-.1.015-.196.043-.289.082a.766.766 0 0 0-.456.5.617.617 0 0 0-.025.261.149.149 0 0 0 .015.048l.86.02a.384.384 0 0 1 .024-.153.262.262 0 0 1 .163-.162.49.49 0 0 1 .342 0 .23.23 0 0 1 .156.157.15.15 0 0 1-.021.13.213.213 0 0 1-.098.078l-.075.024c-.113.03-.228.055-.343.075a6.3141 6.3141 0 0 0-.274.05 3.2042 3.2042 0 0 0-.366.095.762.762 0 0 0-.296.173.617.617 0 0 0-.21.393.753.753 0 0 0 .012.299c.056.26.252.469.508.54.277.084.575.068.842-.043a.808.808 0 0 0 .335-.245c.017.058.036.116.057.173.01.032.029.062.052.087h.948a.418.418 0 0 1-.054-.207 13.4697 13.4697 0 0 1-.026-.601zm-.97-.084a.435.435 0 0 1-.07.189.371.371 0 0 1-.167.145.656.656 0 0 1-.205.054.466.466 0 0 1-.175-.015.248.248 0 0 1-.122-.073.214.214 0 0 1-.055-.105.172.172 0 0 1 .057-.17.344.344 0 0 1 .105-.063 4.83 4.83 0 0 1 .288-.093c.118-.035.233-.079.344-.131.01.087.01.175 0 .262zm5.483-1.72a1.858 1.858 0 0 0-.577 0 1.33 1.33 0 0 0-.747.371 1.21 1.21 0 0 0-.383.798c-.02.185-.003.372.048.551.073.278.239.522.47.693.147.117.32.197.504.235.26.055.527.055.787 0 .184-.038.359-.118.507-.235.23-.17.3961-.415.4681-.693a1.42 1.42 0 0 0 .05-.55 1.208 1.208 0 0 0-.383-.799 1.33 1.33 0 0 0-.743-.37l-.001-.001zm.06 1.814a.388.388 0 0 1-.513.193.371.371 0 0 1-.194-.193.903.903 0 0 1-.072-.246 1.42 1.42 0 0 1 .012-.515.657.657 0 0 1 .1-.247.374.374 0 0 1 .622 0 .627.627 0 0 1 .105.247c.034.17.038.344.01.515a.885.885 0 0 1-.07.246z",v:"-0.35 9.78 24.7 4.45"},
+  samsung:{d:"M19.8166 10.2808l.0459 2.6934h-.023l-.7793-2.6934h-1.2837v3.3925h.8481l-.0458-2.785h.023l.8366 2.785h1.2264v-3.3925zm-16.149 0l-.6418 3.427h.9284l.4699-3.1175h.0229l.4585 3.1174h.9169l-.6304-3.4269zm5.1805 0l-.424 2.6132h-.023l-.424-2.6132H6.5788l-.0688 3.427h.8596l.023-3.0832h.0114l.573 3.0831h.8711l.5731-3.083h.023l.0228 3.083h.8596l-.0802-3.4269zm-7.2664 2.4527c.0343.0802.0229.1949.0114.2522-.0229.1146-.1031.2292-.3324.2292-.2177 0-.3438-.126-.3438-.3095v-.3323H0v.2636c0 .7679.6074.9971 1.2493.9971.6189 0 1.1346-.2178 1.2149-.7794.0458-.298.0114-.4928 0-.5616-.1605-.722-1.467-.9283-1.5588-1.3295-.0114-.0688-.0114-.1375 0-.1834.023-.1146.1032-.2292.3095-.2292.2063 0 .321.126.321.3095v.2063h.8595v-.2407c0-.745-.6762-.8596-1.1576-.8596-.6074 0-1.1117.2063-1.2034.7564-.023.149-.0344.2866.0114.4585.1376.7106 1.364.9169 1.5358 1.3524m11.152 0c.0343.0803.0228.1834.0114.2522-.023.1146-.1032.2292-.3324.2292-.2178 0-.3438-.126-.3438-.3095v-.3323h-.917v.2636c0 .7564.596.9857 1.2379.9857.6189 0 1.1232-.2063 1.2034-.7794.0459-.298.0115-.4814 0-.5616-.1375-.7106-1.4327-.9284-1.5243-1.318-.0115-.0688-.0115-.1376 0-.1835.0229-.1146.1031-.2292.3094-.2292.1948 0 .321.126.321.3095v.2063h.848v-.2407c0-.745-.6647-.8596-1.146-.8596-.6075 0-1.1004.1948-1.192.7564-.023.149-.023.2866.0114.4585.1376.7106 1.341.9054 1.513 1.3524m2.8882.4585c.2407 0 .3094-.1605.3323-.2522.0115-.0343.0115-.0917.0115-.126v-2.533h.871v2.4642c0 .0688 0 .1948-.0114.2292-.0573.6419-.5616.8482-1.192.8482-.6303 0-1.1346-.2063-1.192-.8482 0-.0344-.0114-.1604-.0114-.2292v-2.4642h.871v2.533c0 .0458 0 .0916.0115.126 0 .0917.0688.2522.3095.2522m7.1518-.0344c.2522 0 .3324-.1605.3553-.2522.0115-.0343.0115-.0917.0115-.126v-.4929h-.3553v-.5043H24v.917c0 .0687 0 .1145-.0115.2292-.0573.6303-.596.8481-1.2034.8481-.6075 0-1.1461-.2178-1.2034-.8481-.0115-.1147-.0115-.1605-.0115-.2293v-1.444c0-.0574.0115-.172.0115-.2293.0802-.6419.596-.8482 1.2034-.8482s1.1347.2063 1.2034.8482c.0115.1031.0115.2292.0115.2292v.1146h-.8596v-.1948s0-.0803-.0115-.1261c-.0114-.0802-.0802-.2521-.3438-.2521-.2521 0-.321.1604-.3438.2521-.0115.0458-.0115.1032-.0115.1605v1.5702c0 .0458 0 .0916.0115.126 0 .0917.0917.2522.3323.2522",v:"-0.35 9.82 24.7 4.36"},
+  sony:{d:"M8.5505 9.8881c.921 0 1.6574.2303 2.2209.7423.3848.3485.5999.8454.5939 1.3665a1.9081 1.9081 0 0 1-.5939 1.3726c-.5272.4848-1.3483.7423-2.221.7423-.8725 0-1.6785-.2575-2.2148-.7423-.3908-.3485-.609-.8484-.603-1.3726 0-.518.2182-1.015.603-1.3665.5-.4545 1.3847-.7423 2.2149-.7423zm.003 3.6692c.4606 0 .8878-.1606 1.1878-.4575.2999-.2999.4332-.6605.4332-1.1029 0-.4242-.1484-.821-.4333-1.1029-.2938-.2908-.7332-.4545-1.1877-.4545s-.8938.1637-1.1907.4545c-.2848.2818-.4333.6787-.4333 1.103-.006.409.1485.806.4333 1.1029.2969.2939.7332.4575 1.1907.4575zm-4.8418-1.9665c.1605.0424.315.094.4666.1636a1.352 1.352 0 0 1 .3787.2576c.197.206.309.4817.306.7665a.9643.9643 0 0 1-.3787.7788 2.0662 2.0662 0 0 1-.709.3485 3.7231 3.7231 0 0 1-1.1938.1697c-.352 0-.5467-.0406-.8138-.0962l-.077-.016c-.294-.0666-.5817-.1575-.8575-.2787a.0695.0695 0 0 0-.0424-.0121c-.0454 0-.0818.0394-.0818.0848v.203H.1212v-1.4786h.5242a.7559.7559 0 0 0 .1363.418c.2121.2607.4394.3607.6575.4395.3666.1212.7514.1848 1.1362.1969.5526 0 .8756-.134.9455-.163l.009-.0037.0062-.0023c.0616-.0226.3119-.1143.3119-.3916 0-.2743-.2338-.334-.387-.373l-.022-.0058c-.1708-.046-.562-.0872-.9897-.1323l-.1526-.016c-.4848-.0515-.9696-.1273-1.1968-.1758-.4977-.1097-.6942-.2917-.816-.4045l-.0082-.0076A1.0192 1.0192 0 0 1 0 11.1608c0-.497.3394-.797.7575-.9817.4454-.2.9756-.288 1.4392-.288.8211.0031 1.4877.2697 1.727.394.097.0515.1455-.0121.1455-.0606v-.1484h.5272v1.2876h-.4727a.9056.9056 0 0 0-.2939-.4909 1.289 1.289 0 0 0-.297-.1787c-.3968-.1667-.821-.2515-1.2513-.2455-.4423 0-.8665.085-1.0786.2153-.1333.0818-.2.1848-.2.306 0 .1727.1454.2424.2182.2636.1967.0597.6328.103.972.1369.0736.0073.1426.0142.2036.0206.3272.0334 1.012.1243 1.315.2zm18.1673-.9966v-.4787H24v.4696h-.4757c-.1727 0-.2424.0334-.3727.1788l-1.4271 1.63a.098.098 0 0 0-.0182.0698v.7423a1.106 1.106 0 0 0 .0121.103.1496.1496 0 0 0 .1.0909.9368.9368 0 0 0 .1303.009h.4848v.4698h-2.5724v-.4697h.4606a.9343.9343 0 0 0 .1302-.0091.1627.1627 0 0 0 .1031-.091.5626.5626 0 0 0 .009-.1v-.7422c0-.0242 0-.0242-.0333-.0636a606.7592 606.7592 0 0 0-1.4119-1.6028c-.0758-.0788-.2061-.2061-.406-.2061h-.4576v-.4696h2.5876v.4696h-.3121c-.0697 0-.1182.0697-.0576.1455 0 0 .8696 1.0392.8787 1.0513.0091.0122.0152.0122.0273.003.0121-.009.8938-1.0453.8999-1.0543a.0912.0912 0 0 0-.0182-.1273.1095.1095 0 0 0-.0606-.0182zm-6.284-.0031h.4848c.2212 0 .2606.0848.2636.2909l.0273 1.5664-2.5815-2.324H11.944v.4697h.412c.297 0 .3182.1636.3182.309v2.2138c.0004.1285.0009.295-.1818.295h-.506v.4667h2.1634v-.4697h-.5273c-.212 0-.2211-.097-.2242-.303v-1.8816l2.9724 2.6511h.7575l-.0394-2.9966c.003-.218.0182-.2908.2424-.2908h.4726v-.4697H15.595Z",v:"-0.35 9.54 24.7 4.92"},
+  vivo:{d:"M19.604 14.101c-1.159 0-1.262-.95-1.262-1.24 0-.29.103-1.242 1.262-1.242h2.062c1.16 0 1.263.951 1.263 1.242 0 .29-.104 1.24-1.263 1.24m-2.062-3.527c-2.142 0-2.333 1.752-2.333 2.287 0 .535.19 2.286 2.333 2.286h2.062c2.143 0 2.334-1.751 2.334-2.286 0-.535-.19-2.287-2.334-2.287m-5.477.107c-.286 0-.345.05-.456.213-.11.164-2.022 3.082-2.022 3.082-.06.09-.126.126-.206.126-.08 0-.145-.036-.206-.126 0 0-1.912-2.918-2.022-3.082-.11-.164-.17-.213-.456-.213h-.668c-.154 0-.224.12-.127.267l2.283 3.467c.354.521.614.732 1.196.732s.842-.21 1.196-.732l2.284-3.467c.096-.146.026-.267-.128-.267m-8.876.284c0-.203.08-.284.283-.284h.505c.203 0 .283.08.283.283v3.9c0 .202-.08.283-.283.283h-.505c-.203 0-.283-.08-.283-.283zm-1.769-.285c-.287 0-.346.05-.456.213-.11.164-2.022 3.082-2.022 3.082-.061.09-.126.126-.206.126-.08 0-.145-.036-.206-.126 0 0-1.912-2.918-2.023-3.082-.11-.164-.169-.213-.455-.213H.175c-.171 0-.224.12-.127.267l2.283 3.467c.355.521.615.732 1.197.732.582 0 .842-.21 1.196-.732l2.283-3.467c.097-.146.044-.267-.127-.267m1.055-.893c-.165-.164-.165-.295 0-.46l.351-.351c.165-.165.296-.165.46 0l.352.351c.165.165.165.296 0 .46l-.352.352c-.164.165-.295.165-.46 0z",v:"-0.35 8.51 24.7 6.98"},
+  xiaomi:{d:"M12 0C8.016 0 4.756.255 2.493 2.516.23 4.776 0 8.033 0 12.012c0 3.98.23 7.235 2.494 9.497C4.757 23.77 8.017 24 12 24c3.983 0 7.243-.23 9.506-2.491C23.77 19.247 24 15.99 24 12.012c0-3.984-.233-7.243-2.502-9.504C19.234.252 15.978 0 12 0zM4.906 7.405h5.624c1.47 0 3.007.068 3.764.827.746.746.827 2.233.83 3.676v4.54a.15.15 0 0 1-.152.147h-1.947a.15.15 0 0 1-.152-.148V11.83c-.002-.806-.048-1.634-.464-2.051-.358-.36-1.026-.441-1.72-.458H7.158a.15.15 0 0 0-.151.147v6.98a.15.15 0 0 1-.152.148H4.906a.15.15 0 0 1-.15-.148V7.554a.15.15 0 0 1 .15-.149zm12.131 0h1.949a.15.15 0 0 1 .15.15v8.892a.15.15 0 0 1-.15.148h-1.949a.15.15 0 0 1-.151-.148V7.554a.15.15 0 0 1 .151-.149zM8.92 10.948h2.046c.083 0 .15.066.15.147v5.352a.15.15 0 0 1-.15.148H8.92a.15.15 0 0 1-.152-.148v-5.352a.15.15 0 0 1 .152-.147Z",v:"-0.35 -0.35 24.7 24.7"},
+};
+function brandKey(make, model){
+  const s = (make||"") + " " + (model||"");
+  for(let i=0;i<BRAND_RULES.length;i++) if(BRAND_RULES[i][0].test(s)) return BRAND_RULES[i][1];
+  return "";
+}
+function brandHTML(key){
+  const L = CAM_LOGOS[key]; if(!L) return "";
+  return '<svg viewBox="'+L.v+'" width="120" height="32" preserveAspectRatio="xMidYMid meet" aria-hidden="true" fill="currentColor"><path fill-rule="evenodd" d="'+L.d+'"/></svg>';
+}
+function cleanLens(l, model){
+  let t = String(l||"");
+  if(model && t.indexOf(model) === 0) t = t.slice(model.length);
+  t = t.replace(/\b(back|front|dual|triple|quad|wide|ultra|telephoto|tele|camera|rear|main)\b/gi, " ");
+  t = t.replace(/\s+/g, " ").trim();
+  return t;
+}
+function fmtShutter(tv){
+  if(!tv) return "";
+  if(tv >= 1) return (Math.round(tv*10)/10) + "s";
+  return "1/" + Math.round(1/tv) + "s";
+}
+function exifOf(it){
+  if(!it || !it.x) return null;
+  const x = it.x, cams = state.cams || [];
+  const cam = cams[x[0]] || {};
+  const key = brandKey(cam.m, cam.d);
+  const head = [], tail = [];
+  const mdl = (cam.d||"").trim(), mk = (cam.m||"").trim();
+  if(mdl) head.push('<b>'+esc(mdl)+'</b>');
+  else if(mk) head.push('<b>'+esc(mk)+'</b>');
+  const lens = cleanLens(cam.l, mdl);
+  // 手机镜头名常常只是「6.8mm f/1.8」这种焦距+光圈的复述，跟后面的参数重复，就不显示了
+  const lensIsDup = /^[\d.]+\s*mm\s*f\/?[\d.]+$/i.test(lens);
+  if(lens && !lensIsDup && lens.replace(/[^a-z0-9]/gi,"").length > 2) head.push(esc(lens));
+  const eq = x[5] || 0, real = x[4] || 0;
+  if(eq) tail.push(eq + "mm");
+  else if(real) tail.push((Math.round(real*10)/10) + "mm");
+  if(x[2]) tail.push("f/" + (Math.round(x[2]*10)/10));
+  if(x[3]) tail.push(fmtShutter(x[3]));
+  if(x[1]) tail.push("ISO " + x[1]);
+  if(!head.length && !tail.length) return null;
+  /* 第一行：机型 + 镜头；第二行：焦距 · 光圈 · 快门 · ISO。手机端换行显示，桌面端仍在同一行 */
+  const sep = ' <span style="opacity:.35">·</span> ';
+  const text = '<span class="ex1">'+head.join(sep)+'</span>'+
+               (tail.length ? '<span class="ex2">'+tail.join(sep)+'</span>' : '');
+  return { key: key, text: text };
+}
+
+
+/* ---------- 数据读取 ---------- */
+async function loadLib(i){
+  state.lib = i;
+  const t = await api("/api/tree?lib=" + i);
+  state.tree = t.years; state.statics = t.statics;
+  state.cams = t.cams || [];
+  state.name = t.lib;
+}
+
+/* ---------- 路由 ---------- */
+function parseHash(){
+  const h = location.hash.replace(/^#\/?/, "");
+  const p = h.split("/").filter(Boolean);
+  let dp = p[2] || "", shot = null;
+  if(dp.indexOf("!") >= 0){
+    const a = dp.split("!");
+    dp = a[0];
+    shot = parseInt(a[1], 10);
+    if(isNaN(shot)) shot = null;
+  }
+  return { y: p[0]?+p[0]:null, m: p[1]?+p[1]:null, d: dp?+dp:null, shot: shot };
+}
+function go(path){ location.hash = path; }
+
+/* ---------- 抽样 ---------- */
+function yearNode(y){ return state.tree.find(a=>a.y===y); }
+function monthNode(y,m){ const n=yearNode(y); return n && n.months.find(x=>x.m===m); }
+function dayItems(y){
+  const n = yearNode(y); if(!n) return [];
+  const out=[];
+  n.months.forEach(mm=>mm.days.forEach(dd=>out.push({y:y,m:mm.m,d:dd.d,cover:dd.cover,n:dd.n})));
+  return out;
+}
+function spread(arr,count){
+  if(arr.length<=count) return arr.slice();
+  const out=[]; const step=(arr.length-1)/(count-1);
+  for(let i=0;i<count;i++) out.push(arr[Math.round(i*step)]);
+  return out;
+}
+function tile(uuid,y,m,d){
+  return '<div class="aged" data-ts="'+tsOf(y,m,d)+'" data-u="'+uuid+'"><img loading="lazy" alt="" src="/t/'+state.lib+'/s/'+uuid+'"></div>';
+}
+function fill(list, count, cell){
+  /* 空格不占位：照片自然补位，整行空时该行直接消失 */
+  return list.slice(0, count).map(cell).join("");
+}
+
+/* ---------- 视图：年 ---------- */
+function viewYears(){
+  const ys = state.tree, first = ys[0], last = ys[ys.length-1];
+  const span = last.y - first.y + 1;
+  const band = ys.map(a=>{
+    return '<button class="seg" data-anchor="#/y'+a.y+'" title="跳到 '+a.y+' 年" data-y="'+a.y+'">'+
+      '<span class="y">'+a.y+'</span><span class="n">'+fmt(a.n)+' 张</span></button>';
+  }).join("");
+  const rows = ys.slice().reverse().map(a=>{
+    const blocks = (a.months||[]).map(mm=>{
+      const picks = spread(mm.days.map(dd=>({d:dd.d,cover:dd.cover})), 6);
+      const mosaic = fill(picks, 6, p=>tile(p.cover,a.y,mm.m,p.d));
+      const thin = picks.length < 6 ? ' data-fill="1"' : '';
+      return '<a class="mb" href="#/'+a.y+'/'+pad(mm.m)+'" title="'+a.y+' 年 '+pad(mm.m)+' 月 · '+fmt(mm.n)+' 张">'+
+        '<div class="mosaic" data-ym="'+monthKey(a.y,mm.m)+'"'+thin+'>'+mosaic+'</div>'+
+        '<div class="mlabel"><b>'+pad(mm.m)+'</b><span>'+mm.days.length+' 天 · '+fmt(mm.n)+' 张</span></div></a>';
+    }).join("");
+    return '<div class="yr" id="y'+a.y+'">'+
+      '<div class="yr-l"><div class="yr-y">'+a.y+'</div>'+
+      '<div class="yr-meta">'+fmt(a.n)+' 张 · '+(a.months||[]).length+' 个月</div></div>'+
+      '<div class="yr-m">'+blocks+'</div></div>';
+  }).join("");
+
+  $("#app").innerHTML =
+    '<section class="intro">'+
+      '<div class="intro-nums"><span class="num">'+span+'</span><span class="unit">年</span>'+
+      '<span class="num">'+fmt(state.statics.total)+'</span><span class="unit">张</span></div>'+
+      '<p class="lede">从 '+first.y+' 到 '+last.y+'。相册按年月日归档，<em>越早的那一天，被时间包浆越深</em>：先褪色泛黄，再叠一层那个年代的胶片色。把「包浆」拖到 0，还能看到它们原本的颜色。</p>'+
+      '<div class="band">'+band+'</div>'+
+    '</section>'+
+    '<section class="yearlist">'+rows+'</section>';
+  paint();
+  armThinMosaics($("#app"));
+  $(".band").addEventListener("click", e=>{
+    const b = e.target.closest(".seg"); if(!b) return;
+    const t = document.getElementById("y"+b.dataset.y);
+    if(t) t.scrollIntoView({behavior:"smooth", block:"start"});
+  });
+}
+
+/* ---------- 视图：月 ---------- */
+function viewMonths(y){
+  const n = yearNode(y); if(!n){ go("/"); return; }
+  const blocks = n.months.map(mm=>{
+    const picks = spread(mm.days.map(dd=>({d:dd.d,cover:dd.cover})), 6);
+    const mosaic = fill(picks, 6, p=>tile(p.cover,y,mm.m,p.d));
+    const days = mm.days.length;
+    const thin = picks.length < 6 ? ' data-fill="1"' : '';
+    return '<a class="mb" href="#/'+y+'/'+pad(mm.m)+'">'+
+      '<div class="mosaic" data-ym="'+monthKey(y,mm.m)+'"'+thin+'>'+mosaic+'</div>'+
+      '<div class="mlabel"><b>'+pad(mm.m)+'</b><span>'+days+' 天 · '+fmt(mm.n)+' 张</span></div></a>';
+  }).join("");
+  $("#app").innerHTML =
+    '<div class="head"><h2>'+y+' 年</h2>'+
+    '<div class="meta"><b>'+fmt(n.n)+'</b> 张照片'+
+    '<br>'+n.months.length+' 个月有记录</div></div>'+
+    '<section class="months">'+blocks+'</section>';
+  paint();
+  armThinMosaics($("#app"));
+}
+
+/* ---------- 视图：日（月历） ---------- */
+function monthKey(y,m){ return y+"-"+pad(m); }
+
+function monthSectionHtml(mo){
+  const daysInMonth = new Date(mo.y, mo.m, 0).getDate();
+  const offset = (new Date(mo.y, mo.m-1, 1).getDay()+6)%7;
+  return '<section class="monsec" data-m="'+monthKey(mo.y,mo.m)+'">'+
+    '<div class="monhead"><span class="dh-d">'+mo.y+' 年 '+pad(mo.m)+' 月</span>'+
+    '<span class="dh-m">'+mo.days.length+' 天 · '+fmt(mo.n)+' 张</span>'+
+    '<span class="dh-ln"></span></div>'+
+    '<div class="pgrid" data-ym="'+monthKey(mo.y,mo.m)+'"></div></section>';
+}
+
+/* 一个月不到 6 天时：用这些天里的全部照片把 6 格补满 */
+function pickSpread(items, want){
+    const byDay = {};
+    items.forEach(it=>{
+      const dt = new Date((it.t||0)*1000);
+      const k = dt.getFullYear()+"-"+pad(dt.getMonth()+1)+"-"+pad(dt.getDate());
+      (byDay[k] = byDay[k] || []).push(it);
+    });
+    const keys = Object.keys(byDay);
+    const out = [], seen = {};
+    let round = 0, guard = 0;
+    while(out.length < want && guard++ < 40){
+      let added = false;
+      for(const k of keys){
+        const arr = byDay[k];
+        if(arr[round]){ const it = arr[round]; if(!seen[it.u]){ seen[it.u]=1; out.push(it); added = true; } }
+        if(out.length >= want) break;
+      }
+      if(!added) break;
+      round++;
+    }
+    return out;
+}
+let sketchIO = null;
+function fillThinMosaic(el){
+    if(!el || el.dataset.state) return;
+    el.dataset.state = "loading";
+    api("/api/month?lib="+state.lib+"&ym="+el.dataset.ym).then(items=>{
+      el.dataset.state = "done";
+      const got = pickSpread(items || [], 6);
+      if(!got.length) return;
+      const ym = el.dataset.ym.split("-"), Y = +ym[0], M = +ym[1];
+      el.innerHTML = got.map(it=>{
+        const dt = new Date((it.t||0)*1000);
+        return tile(it.u, Y, M, dt.getDate());
+      }).join("");
+      paint(el.parentElement);
+    }).catch(()=>{ el.dataset.state = ""; });
+}
+function armThinMosaics(root){
+    if(!sketchIO){
+      sketchIO = new IntersectionObserver(es=>{
+        es.forEach(e=>{ if(e.isIntersecting){ sketchIO.unobserve(e.target); fillThinMosaic(e.target); } });
+      }, {rootMargin:"600px 0px"});
+    }
+    root.querySelectorAll('.mosaic[data-fill]:not([data-state])').forEach(el=>sketchIO.observe(el));
+}
+
+/* 月视图：整月照片平铺网格，每张标日期 */
+function pgTile(it){
+    const dt = new Date((it.t||0)*1000);
+    const y = dt.getFullYear(), m = dt.getMonth()+1, day = dt.getDate();
+    const href = "#/"+y+"/"+pad(m);
+    return '<a class="pg" href="'+href+'" data-u="'+it.u+'" data-d="'+y+'-'+pad(m)+'-'+pad(day)+'" title="'+y+'.'+pad(m)+'.'+pad(day)+'">'+
+      '<div class="aged" data-ts="'+tsOf(y,m,day)+'" data-u="'+it.u+'">'+
+      '<img loading="lazy" alt="" src="'+turl(it.u,"s")+'"></div>'+
+      '<span class="pgt">'+pad(m)+'.'+pad(day)+'</span></a>';
+}
+/* 月视图点图直接进详情：把整个月当成一条连续片流喂给灯箱 */
+const monthItems = new Map();
+function dayKeyOf(it){
+    const dt = new Date((it.t||0)*1000);
+    return dt.getFullYear()+"-"+pad(dt.getMonth()+1)+"-"+pad(dt.getDate());
+}
+function openMonthLb(ym, u){
+    const items = monthItems.get(ym); if(!items || !items.length) return;
+    const byDay = {}, days = [];
+    items.forEach(it=>{
+      const k = dayKeyOf(it);
+      if(!byDay[k]){ byDay[k] = []; days.push(k); }
+      byDay[k].push(it);
+    });
+    state.stream = {lib:state.lib, byDay:byDay, days:days, oldest:null, newest:null,
+                    hasOlder:false, hasNewer:false, busy:false, anchor:null};
+    const day = dayKeyOf(items.find(x=>x.u===u) || items[0]);
+    const idx = Math.max(0, (byDay[day]||[]).findIndex(x=>x.u===u));
+    openLb(day, idx);
+}
+document.addEventListener("click", e=>{
+  const a = e.target.closest && e.target.closest("#months .pg"); if(!a) return;
+  const grid = a.closest(".pgrid"); if(!grid) return;
+  e.preventDefault(); e.stopPropagation();
+  openMonthLb(grid.dataset.ym, a.dataset.u);
+}, true);
+
+let pgIO = null;
+function fillMonthGrid(el){
+    if(!el || el.dataset.state === "loading" || el.dataset.state === "done") return;
+    el.dataset.state = "loading";
+    el.innerHTML = '<div class="pg-empty">载入中…</div>';
+    api("/api/month?lib="+state.lib+"&ym="+el.dataset.ym).then(items=>{
+      el.dataset.state = "done";
+      if(!items || !items.length){ el.innerHTML = '<div class="pg-empty">这个月没有照片</div>'; return; }
+      monthItems.set(el.dataset.ym, items);
+      el.innerHTML = items.map(pgTile).join("");
+      paint(el.parentElement);
+      keepCalAnchor();
+    }).catch(()=>{ el.dataset.state = ""; el.innerHTML = '<div class="pg-empty">载入失败</div>'; });
+}
+/* 网格异步长高：用户自己滚动前，保持锚点月份停在原位 */
+function keepCalAnchor(){
+    const C = state.cal;
+    if(!C || !C.keep || !C.anchorKey) return;
+    const sec = document.querySelector('#months .monsec[data-m="'+C.anchorKey+'"]');
+    if(!sec) return;
+    const dy = sec.getBoundingClientRect().top - (tbH() + 4);
+    if(Math.abs(dy) > 1) window.scrollBy(0, dy);
+}
+function stopKeepAnchor(){ if(state.cal) state.cal.keep = false; }
+
+function armMonthGrids(wrap){
+    if(!pgIO){
+      pgIO = new IntersectionObserver(es=>{
+        es.forEach(e=>{ if(e.isIntersecting){ pgIO.unobserve(e.target); fillMonthGrid(e.target); } });
+      }, {rootMargin:"900px 0px"});
+    }
+    wrap.querySelectorAll(".pgrid[data-ym]:not([data-state])").forEach(el=>pgIO.observe(el));
+}
+
+function calMonths(){
+  const out = [];
+  state.tree.forEach(yr=>yr.months.forEach(mo=>out.push({y:yr.y,m:mo.m,n:mo.n,days:mo.days})));
+  return out;
+}
+
+function renderCalRange(anchorKey, anchorTop){
+  const C = state.cal, wrap = $("#months"); if(!wrap) return;
+  let html = "";
+  if(C.lo === 0) html += '<div class="calend">· 最早的一个月 ·</div>';
+  for(let i=C.lo;i<=C.hi;i++) html += monthSectionHtml(C.months[i]);
+  if(C.hi === C.months.length-1) html += '<div class="calend">· 最新的一个月 ·</div>';
+  wrap.innerHTML = html;
+  paint(wrap);
+  armMonthGrids(wrap);
+  if(anchorKey){
+    const sec = document.querySelector('#months .monsec[data-m="'+anchorKey+'"]');
+    if(sec) window.scrollTo(0, sec.getBoundingClientRect().top + window.scrollY - (anchorTop||0));
+  }
+}
+
+function calAnchor(){
+  const secs = document.querySelectorAll("#months .monsec");
+  for(let i=0;i<secs.length;i++){
+    if(secs[i].getBoundingClientRect().bottom > tbH()+10){
+      return {key: secs[i].dataset.m, top: secs[i].getBoundingClientRect().top};
+    }
+  }
+  return null;
+}
+
+function calExtend(dir){
+  const C = state.cal; if(!C) return;
+  if(dir==="older" && C.lo===0) return;
+  if(dir==="newer" && C.hi===C.months.length-1) return;
+  const a = calAnchor();
+  if(dir==="older") C.lo = Math.max(0, C.lo-3);
+  else C.hi = Math.min(C.months.length-1, C.hi+3);
+  renderCalRange(a && a.key, a && a.top);
+}
+
+function updateCalCrumb(){
+  const secs = document.querySelectorAll("#months .monsec");
+  let cur = null;
+  for(let i=0;i<secs.length;i++){
+    if(secs[i].getBoundingClientRect().top < tbH()+90) cur = secs[i].dataset.m; else break;
+  }
+  if(!cur) return;
+  const a = cur.split("-");
+  const cm = $("#crumbMonth"), cy = $("#crumbYear");
+  if(cm){ const t = a[1]+" 月"; if(cm.textContent !== t) cm.textContent = t; }
+  if(cy && cy.textContent !== a[0]){
+    cy.textContent = a[0];
+    if(cy.tagName === "A") cy.setAttribute("href", "#/"+a[0]);
+  }
+}
+
+function onCalScroll(){
+  if(streamTick) return;
+  streamTick = true;
+  requestAnimationFrame(()=>{
+    streamTick = false;
+    if(!state.cal || !$("#months")) return;
+    updateCalCrumb();
+    const top = window.scrollY;
+    const hgt = document.documentElement.scrollHeight;
+    if(top < 300 && needMore.older){ needMore.older = false; calExtend("older"); }
+    else if(hgt - top - window.innerHeight < 600 && needMore.newer){ needMore.newer = false; calExtend("newer"); }
+  });
+}
+let calScrollOn = false;
+function bindCalScroll(){
+  if(calScrollOn) return;
+  calScrollOn = true;
+  window.addEventListener("scroll", onCalScroll, {passive:true});
+  ["wheel","touchstart","pointerdown","keydown"].forEach(ev=>{
+    window.addEventListener(ev, stopKeepAnchor, {passive:true});
+  });
+  ["wheel","touchmove","pointerdown","keydown"].forEach(ev=>{
+    window.addEventListener(ev, armMore, {passive:true});
+  });
+}
+
+function viewCalendar(y,m){
+  const months = calMonths();
+  if(!months.length){ go("/"); return; }
+  const key = monthKey(y,m);
+  let idx = months.findIndex(x=>monthKey(x.y,x.m)===key);
+  if(idx < 0) idx = months.length-1;
+  state.cal = {months:months, lo:Math.max(0, idx-2), hi:Math.min(months.length-1, idx+2),
+               keep:true, anchorKey:key};
+  document.documentElement.style.setProperty("--tb", tbH()+"px");
+  $("#app").innerHTML =
+    '<div class="streamtop"><div class="st-l">'+
+      '<span class="st-date">'+months[idx].y+' 年 '+pad(months[idx].m)+' 月</span></div>'+
+    '<div class="st-r">上下滑动 · 连续浏览前后月份 ／ 点照片进入那一天的连续照片流</div></div>'+
+    '<div id="months" class="months-flow"></div>';
+  renderCalRange();
+  const sec = document.querySelector('#months .monsec[data-m="'+key+'"]');
+  if(sec) window.scrollTo(0, Math.max(0, sec.getBoundingClientRect().top + window.scrollY - tbH() - 4));
+  bindCalScroll();
+  setTimeout(()=>{ keepCalAnchor(); setTimeout(stopKeepAnchor, 1400); }, 500);
+  updateCalCrumb();
+}
+
+/* ---------- 视图：连续照片流 ----------
+   点某一天进入；照片按日分段、行内等高平铺，
+   初始定位到那一天，上下滑可以连续走进前后日期。 */
+const STREAM_ROW = 5.4;      // 每屏宽大约放几张，决定行高
+const STREAM_GAP = 4;
+
+function dayParts(key){ const a = key.split("-").map(Number); return {y:a[0], m:a[1], d:a[2]}; }
+function wdName(key){ const {y,m,d} = dayParts(key); return "星期" + DOW[(new Date(y,m-1,d).getDay()+6)%7]; }
+
+/* 手机端顶栏：手指下拉（内容往下走）就出现，手指上滑（继续往下浏览）就收起。
+   不看滚动位置，只看手势方向；程序滚动与无限加载补位都不影响。 */
+(function(){
+  let bar = null, mq = null, lastY = 0, hidden = false, holdUntil = 0;
+  function setHidden(v){
+    if(!bar || hidden === v) return;
+    hidden = v;
+    bar.classList.toggle("is-hidden", v);
+    /* 顶栏收起时月份/日期吸顶条跟到最顶，自己始终可见 */
+    document.documentElement.style.setProperty("--tbv", (v ? 0 : bar.offsetHeight) + "px");
+  }
+  function onScroll(){
+    if(!bar) return;
+    /* 程序化滚动不再屏蔽判定：只看位移方向，避免一次跳转后状态卡住 */
+    const panel = bar.querySelector(".aging-panel"), libp = bar.querySelector(".lib-panel");
+    if((panel && !panel.hidden) || (libp && !libp.hidden)){ setHidden(false); lastY = window.scrollY; return; }
+    const y = window.scrollY, dy = y - lastY;
+    lastY = y;
+    if(y <= 20){ setHidden(false); return; }        /* 到顶必定露出 */
+    if(Math.abs(dy) < 6) return;                    /* 抖动忽略 */
+    setHidden(dy > 0 ? true : false);               /* 往下翻新内容 → 收起；往上回看 → 露出 */
+  }
+  function boot(){
+    bar = document.querySelector(".topbar");
+    if(!bar) return;
+    mq = window.matchMedia("(max-width:760px)");
+    lastY = window.scrollY;
+    const rawTo = window.scrollTo.bind(window);
+    window.scrollTo = function(){ holdUntil = performance.now() + 240; return rawTo.apply(window, arguments); };
+    window.addEventListener("scroll", onScroll, {passive:true});
+    /* 手势方向直接决定显隐：下拉露、上滑收（任何列表、任何层级） */
+    let vy = null, vT = 0, armed = true;
+    window.addEventListener("touchstart", e=>{
+      if(!mq.matches || e.touches.length !== 1) return;
+      const p = bar.querySelector(".aging-panel"), lp = bar.querySelector(".lib-panel");
+      if((p && !p.hidden) || (lp && !lp.hidden)){ vy = null; return; }
+      const lbEl = document.getElementById("lb");
+      if(lbEl && !lbEl.hidden){ vy = null; return; }
+      vy = e.touches[0].clientY; vT = Date.now(); armed = true;
+    }, {passive:true});
+    window.addEventListener("touchmove", e=>{
+      if(vy === null || !armed) return;
+      const dy = e.touches[0].clientY - vy;
+      if(dy > 18){ setHidden(false); armed = false; }     /* 手指往下 → 回看旧内容 → 露出 */
+      else if(dy < -18){ setHidden(true); armed = false; } /* 手指往上 → 翻新内容 → 收起 */
+    }, {passive:true});
+    window.addEventListener("touchend", ()=>{ vy = null; }, {passive:true});
+    window.addEventListener("touchcancel", ()=>{ vy = null; }, {passive:true});
+    window.addEventListener("resize", ()=>{ if(!mq.matches) setHidden(false); });
+    window.addEventListener("albshow", ()=> setHidden(false));
+    const lbEl = document.getElementById("lb"); if(lbEl && !lbEl.hidden) setHidden(false);
+  }
+  if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else boot();
+})();
+function tbH(){ const t = $(".topbar"); return (t ? t.offsetHeight : 56) + 4; }
+/* 顶栏常驻：固定定位 + 给正文留出等高位移，滚动到哪里都能点包浆 */
+function syncTopbarPad(){
+  const t = $(".topbar"); if(!t) return;
+  document.documentElement.style.setProperty("--tbh", t.offsetHeight + "px");
+  if(!t.classList.contains("is-hidden")) document.documentElement.style.setProperty("--tbv", t.offsetHeight + "px");
+}
+window.addEventListener("resize", syncTopbarPad);
+if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", syncTopbarPad); else syncTopbarPad();
+
+function streamHead(key){
+  const {y,m,d} = dayParts(key);
+  return '<div class="streamtop"><div class="st-l">'+
+    '<span class="st-date">'+y+' 年 '+m+' 月 '+d+' 日</span>'+
+    '<span class="st-wd">'+wdName(key)+'</span></div>'+
+    '<div class="st-r">上下滑动 · 连续进入前后日期 ／ 点图片看大图</div></div>';
+}
+
+function sectionHead(key, items){
+  const {y,m,d} = dayParts(key);
+  let place = "";
+  items.forEach(it=>{ if(!place && it.p) place = it.p; });
+  return '<div class="dayhead">'+
+    '<span class="dh-d">'+m+'.'+pad(d)+'</span>'+
+    '<span class="dh-m">'+y+' · '+wdName(key)+' · '+items.length+' 张</span>'+
+    '<span class="dh-ln"></span>'+
+    (place?'<span class="dh-p">'+esc(place)+'</span>':'')+
+    '</div>';
+}
+
+function tileHtml(day, idx, it, style){
+  const tm = new Date(it.t*1000);
+  const clock = pad(tm.getHours())+":"+pad(tm.getMinutes());
+  return '<button class="ph aged" data-d="'+day+'" data-k="'+idx+'" data-ts="'+it.t+'" data-u="'+it.u+'"'+
+    (style?' style="'+style+'"':'')+' aria-label="'+clock+'">'+
+    '<img loading="lazy" alt="" src="'+turl(it.u,"m")+'">'+
+    '<span class="clock">'+clock+'</span></button>';
+}
+
+function layoutSection(sec, items){
+  const wrap = sec.querySelector(".prowwrap"); if(!wrap) return;
+  const W = wrap.clientWidth || $("#app").clientWidth || 900;
+  const day = sec.dataset.d;
+
+  if(state.fit === "square"){
+    const cols = Math.max(3, Math.min(9, Math.floor(W/180)));
+    wrap.className = "prowwrap sqgrid";
+    wrap.style.gridTemplateColumns = "repeat("+cols+",1fr)";
+    let html = "";
+    items.forEach((it, idx)=>{ html += tileHtml(day, idx, it, ""); });
+    wrap.innerHTML = html;
+    return;
+  }
+
+  const H = Math.max(140, Math.min(240, W/6.2));
+  const rows = []; let cur = [], total = 0;
+  items.forEach((it, idx)=>{
+    const a = (it.w && it.h) ? it.w/it.h : 1.33;
+    const w = Math.min(H*a, W*0.85);
+    if(cur.length && total + STREAM_GAP + w > W){ rows.push(cur); cur = []; total = 0; }
+    cur.push({it:it, idx:idx, w:w});
+    total += (cur.length>1?STREAM_GAP:0) + w;
+  });
+  if(cur.length) rows.push(cur);
+
+  let html = "";
+  rows.forEach(row=>{
+    html += '<div class="prow">' + row.map(x=>
+      tileHtml(day, x.idx, x.it, "width:"+x.w.toFixed(1)+"px;height:"+H.toFixed(1)+"px")
+    ).join("") + '</div>';
+  });
+  wrap.className = "prowwrap";
+  wrap.style.gridTemplateColumns = "";
+  wrap.innerHTML = html;
+}
+
+function makeSection(day, items){
+  const sec = document.createElement("section");
+  sec.className = "daysec"; sec.dataset.d = day;
+  sec.innerHTML = sectionHead(day, items) + '<div class="prowwrap"></div>';
+  return sec;
+}
+
+function addBlocks(blocks, mode){
+  const S = state.stream, wrap = $("#stream");
+  if(!wrap) return;
+  const beforeH = document.documentElement.scrollHeight;
+  const beforeY = window.scrollY;
+  const built = [];
+  const seq = mode === "older" ? blocks.slice().reverse() : blocks;
+  seq.forEach(b=>{
+    S.byDay[b.d] = b.items || [];
+    const sec = makeSection(b.d, b.items || []);
+    if(mode === "older") wrap.insertBefore(sec, wrap.firstChild);
+    else wrap.appendChild(sec);
+    built.push([sec, b.items || []]);
+  });
+  built.forEach(pair=>layoutSection(pair[0], pair[1]));
+  paint(wrap);
+  if(mode === "older"){
+    const afterH = document.documentElement.scrollHeight;
+    window.scrollTo(0, beforeY + (afterH - beforeH));
+  }
+  S.days = Object.keys(S.byDay).sort();
+  S.oldest = S.days[0];
+  S.newest = S.days[S.days.length-1];
+}
+
+async function loadMore(dir){
+  const S = state.stream;
+  if(!S || S.busy) return;
+  if(dir === "older" && !S.hasOlder) return;
+  if(dir === "newer" && !S.hasNewer) return;
+  S.busy = true;
+  try{
+    const anchor = dir === "older" ? S.oldest : S.newest;
+    const data = await api("/api/stream?lib="+S.lib+"&d="+anchor+"&dir="+dir+"&n=4");
+    S.hasOlder = data.hasOlder; S.hasNewer = data.hasNewer;
+    if(data.blocks.length) addBlocks(data.blocks, dir === "older" ? "older" : "newer");
+  }catch(err){
+    /* 加载失败就停在原地，不打断当前阅读 */
+  }finally{
+    S.busy = false;
+  }
+}
+
+let streamTick = false, streamScrollOn = false, needMore = {older:false, newer:false};
+
+function updateCrumbDay(){
+  let curDay = null;
+  const secs = document.querySelectorAll("#stream .daysec");
+  for(let i=0;i<secs.length;i++){
+    if(secs[i].getBoundingClientRect().top < tbH()+80) curDay = secs[i].dataset.d; else break;
+  }
+  const cd = $("#crumbDay");
+  if(curDay && cd){
+    const t = pad(dayParts(curDay).d)+" 日";
+    if(cd.textContent !== t) cd.textContent = t;
+  }
+}
+let lastEdgeLoad = 0;
+function armMore(){
+  needMore.older = true; needMore.newer = true;
+  const now = Date.now();
+  if(now - lastEdgeLoad < 450) return;          // 手势级节流
+  const top = window.scrollY;
+  const gap = document.documentElement.scrollHeight - top - window.innerHeight;
+  if(state.cal && $("#months")){
+    if(top < 320){ lastEdgeLoad = now; calExtend("older"); }
+    else if(gap < 640){ lastEdgeLoad = now; calExtend("newer"); }
+  }else if(state.stream && $("#stream")){
+    const S = state.stream;
+    if(S.busy) return;
+    if(top < 320 && S.hasOlder){ lastEdgeLoad = now; loadMore("older"); }
+    else if(gap < 560 && S.hasNewer){ lastEdgeLoad = now; loadMore("newer"); }
+  }
+}
+function onStreamScroll(){
+  if(streamTick) return;
+  streamTick = true;
+  requestAnimationFrame(()=>{
+    streamTick = false;
+    const S = state.stream;
+    if(!S || !$("#stream")) return;
+    updateCrumbDay();
+    if(S.busy) return;
+    const top = window.scrollY;
+    const hgt = document.documentElement.scrollHeight;
+    const vh = window.innerHeight;
+    if(top < 260 && S.hasOlder && needMore.older){ needMore.older = false; loadMore("older"); }
+    else if(hgt - top - vh < 520 && S.hasNewer && needMore.newer){ needMore.newer = false; loadMore("newer"); }
+  });
+}
+function bindStreamScroll(){
+  if(streamScrollOn) return;
+  streamScrollOn = true;
+  window.addEventListener("scroll", onStreamScroll, {passive:true});
+  ["wheel","touchmove","pointerdown","keydown"].forEach(ev=>{
+    window.addEventListener(ev, armMore, {passive:true});
+  });
+}
+
+async function viewStream(y,m,d){
+  const key = y+"-"+pad(m)+"-"+pad(d);
+  state.stream = {lib:state.lib, byDay:{}, days:[], oldest:null, newest:null,
+                  hasOlder:true, hasNewer:true, busy:false, anchor:key};
+  document.documentElement.style.setProperty("--tb", tbH()+"px");
+  $("#app").innerHTML = streamHead(key) +
+    '<div id="stream" class="stream"><div class="boot"><div class="ring"></div><p>读取这一天</p></div></div>'+
+    '';
+
+  const data = await api("/api/stream?lib="+state.lib+"&d="+key+"&before=2&after=2");
+  state.stream.hasOlder = data.hasOlder;
+  state.stream.hasNewer = data.hasNewer;
+  $("#stream").innerHTML = "";
+  if(!data.blocks.length){
+    $("#stream").innerHTML = '<div class="empty">这一天没有照片</div>';
+    return;
+  }
+  addBlocks(data.blocks, "newer");
+
+  const sec = document.querySelector('#stream .daysec[data-d="'+key+'"]');
+  if(sec){
+    const offp = sec.getBoundingClientRect().top + window.scrollY - tbH() - 6;
+    window.scrollTo(0, Math.max(0, offp));
+  }
+  bindStreamScroll();
+  updateCrumbDay();
+}
+
+/* ---------- 灯箱（跨越所有已加载日期，左右连续） ---------- */
+function flatStream(){
+  const S = state.stream, out = [];
+  if(!S) return out;
+  for(const d of S.days){
+    const arr = S.byDay[d] || [];
+    for(let i=0;i<arr.length;i++) out.push({day:d, k:i, it:arr[i]});
+  }
+  return out;
+}
+function lbCurrent(){
+  const L = state.lb; if(!L || !state.stream) return null;
+  return (state.stream.byDay[L.day] || [])[L.k] || null;
+}
+const agingEl = document.querySelector(".aging");
+const agingHome = agingEl.parentNode, agingNext = agingEl.nextSibling;
+function dockAging(inLb){
+  const panel = document.getElementById("agingPanel"), btn = document.getElementById("agingBtn");
+  if(panel){ panel.hidden = true; }
+  if(btn){ btn.setAttribute("aria-expanded", "false"); }
+  const slot = document.getElementById("lbTools");
+  if(inLb){ if(slot && agingEl.parentNode !== slot) slot.appendChild(agingEl); }
+  else if(agingEl.parentNode !== agingHome){ agingHome.insertBefore(agingEl, agingNext); }
+}
+/* 详情页状态写进地址栏（#/年/月/日!序号），刷新后还能停在这张照片上 */
+function syncShotHash(){
+  const s = state.lb; if(!s || $("#lb").hidden) return;
+  const r = parseHash(); if(!r.y || !r.m || !r.d) return;
+  try{ history.replaceState(null, "", "#/"+r.y+"/"+r.m+"/"+r.d+"!"+s.k); }catch(e){}
+}
+function clearShotHash(){
+  const r = parseHash(); if(!r.y || !r.m || !r.d) return;
+  try{ history.replaceState(null, "", "#/"+r.y+"/"+r.m+"/"+r.d); }catch(e){}
+}
+function saveLastShot(){
+  if(!state.lb) return;
+  const v = encodeURIComponent(JSON.stringify(state.lb));
+  try{ localStorage.setItem("album.lastShot", JSON.stringify(state.lb)); }catch(e){}
+  try{ sessionStorage.setItem("album.lastShot", JSON.stringify(state.lb)); }catch(e){}
+  try{ document.cookie = "albumShot="+v+";path=/;max-age=86400;SameSite=Lax"; }catch(e){}
+}
+function dropLastShot(){
+  try{ localStorage.removeItem("album.lastShot"); }catch(e){}
+  try{ sessionStorage.removeItem("album.lastShot"); }catch(e){}
+  try{ document.cookie = "albumShot=;path=/;max-age=0;SameSite=Lax"; }catch(e){}
+}
+function readLastShot(){
+  try{ const v = localStorage.getItem("album.lastShot"); if(v) return JSON.parse(v); }catch(e){}
+  try{ const v = sessionStorage.getItem("album.lastShot"); if(v) return JSON.parse(v); }catch(e){}
+  const m = document.cookie.match(/(?:^|;\s*)albumShot=([^;]+)/);
+  if(m){ try{ return JSON.parse(decodeURIComponent(m[1])); }catch(e){} }
+  return null;
+}
+function restoreLastShot(){
+  try{
+    const s = readLastShot();
+    if(!s || !s.day || typeof s.k !== "number") return;
+    const y = +s.day.slice(0,4), m = +s.day.slice(5,7), d = +s.day.slice(8,10);
+    const r = parseHash();
+    if(r.shot !== null) return;                        /* 地址栏已经指定了照片 */
+    if(r.y && (r.y !== y || r.m !== m || r.d !== d)) return;   /* 用户在看别的层级 */
+    history.replaceState(null, "", "#/"+y+"/"+m+"/"+d+"!"+s.k);
+  }catch(e){}
+}
+function openLb(day, idx){
+  const arr = (state.stream && state.stream.byDay[day]) || [];
+  if(!arr[idx]) return;
+  state.lb = {day:day, k:idx}; state.lbDir = 0;
+  saveLastShot();
+  renderLb();
+  $("#lb").hidden = false;
+  document.body.style.overflow = "hidden";
+  lbStr = filmStrength(false);         /* 进灯箱时继承全局强度，之后单独调 */
+  paintFilmFilters();
+  if(typeof syncFilmUI === "function") syncFilmUI();
+  dockAging(true);              /* 详情页：调节控件固定在右上 */
+  primeLb(3);
+}
+function closeLb(){
+  $("#lb").hidden = true; state.lb = null;
+  clearShotHash(); dropLastShot();
+  $("#lbMedia").innerHTML = "";
+  document.body.style.overflow = "";
+  lbShotFilm = {u:null, type:null};      /* 详情页临时预览：退出即清 */
+  lbStr = filmStrength(false);
+  paintFilmFilters();
+  dockAging(false);                     /* 控件回到顶栏原位 */
+  if(typeof syncFilmUI === "function") syncFilmUI();
+}
+/* 灯箱预加载：缓存已解码的大图，切换时不再空白等加载 */
+const lbCache = new Map();
+function lbUrl(it){ return "/t/"+state.lib+"/l/"+it.u; }
+/* 缩略图按像素密度取档：HiDPI 屏把小图升到 m（540），避免 2x 下发糊 */
+const PX_RATIO = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+function turl(u, size){
+  if(size === "s" && PX_RATIO >= 1.5) size = "m";
+  return "/t/"+state.lib+"/"+size+"/"+u;
+}
+function ensureLb(it){
+  if(!it) return Promise.resolve();
+  const u = lbUrl(it);
+  let e = lbCache.get(u);
+  if(!e){
+    const im = new Image();
+    im.decoding = "async";
+    im.src = u;
+    e = { img: im, ready: (im.decode ? im.decode().catch(()=>{}) : Promise.resolve()) };
+    lbCache.set(u, e);
+  }
+  return e.ready;
+}
+function primeLb(radius){
+  if(!state.lb || !state.stream) return;
+  const arr = state.stream.byDay && state.stream.byDay[state.lb.day];
+  if(arr){
+    for(let d=1; d<=radius; d++){
+      ensureLb(arr[state.lb.k-d]);
+      ensureLb(arr[state.lb.k+d]);
+    }
+  }
+  const flat = flatStream();
+  if(flat.length){
+    const i = flat.findIndex(x=>x.day===state.lb.day && x.k===state.lb.k);
+    if(i >= 0) for(let d=1; d<=radius; d++){
+      ensureLb(flat[i-d]);
+      ensureLb(flat[i+d]);
+    }
+  }
+  if(lbCache.size > 80){
+    const keys = [...lbCache.keys()];
+    keys.slice(0, keys.length-60).forEach(k=>lbCache.delete(k));
+  }
+}
+/* 灯箱元信息：片种名取自当前生效的胶片模拟 */
+function syncCapH(){
+  const fig = document.querySelector("#lb figcaption");
+  if(!fig) return;
+  const h = Math.round(fig.offsetHeight);
+  document.documentElement.style.setProperty("--capH", h + "px");
+
+}
+window.addEventListener("resize", ()=>setTimeout(syncCapH, 80));
+/* 参数条高度一变（折行、EXIF 显隐）就同步给照片可用区域 */
+(function(){
+  const fig = document.querySelector("#lb figcaption");
+  if(fig && window.ResizeObserver) new ResizeObserver(()=>syncCapH()).observe(fig);
+})();
+function renderLbMeta(it){
+  if(!it) return;
+  const flat = flatStream();
+  const pos = flat.findIndex(x=>x.day===state.lb.day && x.k===state.lb.k) + 1;
+  const eff = effFilmFor($("#lb"));
+  const filmName = (eff && STOCKS[eff] && STOCKS[eff].name) ? STOCKS[eff].name : "Superia 200";
+  $("#lbMeta").textContent = filmName+" ／ 照片 ／ "+
+    (it.w&&it.h ? it.w+" × "+it.h : "尺寸未知")+" ／ 第 "+pos+" / "+flat.length+" 张";
+}
+function renderLb(){
+  const it = lbCurrent(); if(!it) return;
+  const tm = new Date(it.t*1000);
+  /* 先上中等缩略图（通常已在缓存里，秒出），再静默换成 1500px 大图 */
+  const media = '<img alt="" decoding="async" data-full="'+lbUrl(it)+'" src="/t/'+state.lib+'/m/'+it.u+'">';
+  $("#lbMedia").innerHTML = '<div class="aged' + (state.lbDir>0 ? " inr" : state.lbDir<0 ? " inl" : "") +
+    '" id="lbAged" data-ts="'+it.t+'" data-u="'+it.u+'">'+media+'</div>';
+  lbRot = 0;                          /* 旋转只对当前这张图，换图即复位 */
+  const lbIm0 = $("#lbAged img");
+  if(lbIm0){ lbIm0.addEventListener("load", fitLb); if(lbIm0.complete) fitLb(); }
+  const foot = $("#lb figcaption");
+  if(foot){ foot.classList.remove("enter"); void foot.offsetWidth; foot.classList.add("enter"); }
+  if(state.lb){ syncShotHash(); saveLastShot(); }
+  $("#lbDate").textContent = tm.getFullYear()+" 年 "+pad(tm.getMonth()+1)+" 月 "+pad(tm.getDate())+" 日 "+
+    "星期"+DOW[(tm.getDay()+6)%7]+" "+pad(tm.getHours())+":"+pad(tm.getMinutes());
+
+  renderLbMeta(it);
+  syncCapH(); setTimeout(syncCapH, 60);
+
+  const pl = $("#lbPlace");
+  if(it.p){ pl.hidden = false; pl.textContent = "地点  " + it.p; }
+  else if(it.la && it.lo){ pl.hidden = false; pl.textContent = "坐标  " + it.la.toFixed(4) + ", " + it.lo.toFixed(4); }
+  else { pl.hidden = true; pl.textContent = ""; }
+
+  const ex = $("#lbExif"), exT = $("#lbExifT"), exB = $("#lbBrand");
+  const info = exifOf(it);
+  if(info){
+    ex.hidden = false;
+    exT.innerHTML = info.text;
+    const b = BRANDS[info.key], hasLogo = !!(b && CAM_LOGOS[info.key]);
+    exB.innerHTML = hasLogo ? brandHTML(info.key) : "";
+    exB.hidden = !hasLogo;
+    exB.style.color = (hasLogo && state.logo === "color") ? b.c : "";
+  } else {
+    ex.hidden = true; exT.innerHTML = ""; exB.innerHTML = "";
+  }
+
+  paint($("#lb"));
+  resetZoom();
+  const lbImg = $("#lbAged img");
+  if(lbImg){
+    const u = lbUrl(it);
+    const full = new Image();
+    full.onload = ()=>{
+      const cur = $("#lbAged img");
+      if(cur && cur.dataset.full === u){ cur.src = u; fitLb(); }
+    };
+    full.src = u;
+  }
+  primeLb(3);
+}
+async function stepLb(dir){
+  const L = state.lb; if(!L) return;
+  state.lbDir = dir;
+  let flat = flatStream();
+  let i = flat.findIndex(x=>x.day===L.day && x.k===L.k);
+  if(i < 0) return;
+  let t = i + dir;
+  if(t < 0){
+    if(!state.stream.hasOlder) return;
+    await loadMore("older");
+    flat = flatStream();
+    i = flat.findIndex(x=>x.day===L.day && x.k===L.k);
+    if(i - 1 < 0) return;
+    t = i - 1;
+  }else if(t >= flat.length){
+    if(!state.stream.hasNewer) return;
+    await loadMore("newer");
+    flat = flatStream();
+    i = flat.findIndex(x=>x.day===L.day && x.k===L.k);
+    t = Math.min(flat.length-1, i+1);
+  }
+  const x = flat[t]; if(!x) return;
+  L.day = x.day; L.k = x.k;
+  /* 先等这张图解码完成（最多 320ms 兜底），再播放滑动，避免动效跑在空白上 */
+  await Promise.race([ensureLb(x), new Promise(r=>setTimeout(r, 320))]);
+  renderLb();
+}
+
+/* ---------- 顶栏 ---------- */
+function renderCrumbs(r){
+  const nav = $("#crumbs");
+  if(!r.y){ nav.innerHTML = ""; nav.style.display = "none"; return; }   /* 首页不显示面包屑 */
+  nav.style.display = "";
+  const c = [];
+  c.push(r.y ? '<a href="#/">全部</a>' : '<span class="cur">全部</span>');
+  if(r.y){
+    c.push(r.m ? '<a href="#/'+r.y+'" id="crumbYear">'+r.y+'</a>' : '<span class="cur">'+r.y+'</span>');
+    if(r.m){
+      c.push(r.d ? '<a href="#/'+r.y+'/'+pad(r.m)+'">'+pad(r.m)+' 月</a>'
+                 : '<span class="cur" id="crumbMonth">'+pad(r.m)+' 月</span>');
+      if(r.d) c.push('<span class="cur" id="crumbDay">'+pad(r.d)+' 日</span>');
+    }
+  }
+  $("#crumbs").innerHTML = c.join('<span class="sep">/</span>');
+}
+
+function animateIn(){
+  const app = $("#app"); if(!app) return;
+  app.classList.remove("enter");
+  void app.offsetWidth;
+  app.classList.add("enter");
+  /* 动画结束后卸掉 transform，否则 #app 变成包含块，月度/日期吸顶条会失效 */
+  app.addEventListener("animationend", function h(){ app.classList.remove("enter"); app.removeEventListener("animationend", h); });
+}
+
+/* ---------- 渲染入口 ---------- */
+async function render(){
+  restoreLastShot();
+  const r = parseHash();
+  renderCrumbs(r);
+  syncFitbar(!!r.d);
+  try{
+    if(!r.y) viewYears();
+    else if(!r.m) viewMonths(r.y);
+    else if(!r.d) viewCalendar(r.y,r.m);
+    else {
+      await viewStream(r.y,r.m,r.d);
+      if(r.shot !== null){
+        const key = r.y+"-"+pad(r.m)+"-"+pad(r.d);
+        if((state.stream.byDay[key]||[])[r.shot]) openLb(key, r.shot);
+      }
+    }
+    animateIn();
+    if(!r.m) window.scrollTo(0, 0);
+  }catch(err){
+    $("#app").innerHTML = '<div class="empty">读取失败：'+esc(err.message)+'</div>';
+  }
+}
+
+/* ---------- 事件 ---------- */
+function agingLabel(){
+  const a = $("#agingVal");
+  if(a) a.textContent = Math.round(state.strength*100)+" / "+Math.round(state.grain*100);
+}
+function bindAging(id, outId, key){
+  const el = $(id); if(!el) return;
+  el.style.setProperty("--p", el.value+"%");
+  el.addEventListener("input", e=>{
+    state[key] = +e.target.value/100;
+    $(outId).textContent = e.target.value;
+    e.target.style.setProperty("--p", e.target.value+"%");
+    agingLabel(); paint();
+  });
+}
+
+/* ---------- 胶片模拟：互斥单选，默认 NC（现有观感），选片种即替换 ---------- */
+const STOCKS = {
+  portra:{name:"Portra 400", mono:false, sat:.96, con:.98, hue:0,
+    r:[0.030,0.145,0.275,0.405,0.535,0.665,0.790,0.905,1.0],
+    g:[0.020,0.130,0.255,0.380,0.505,0.630,0.755,0.880,1.0],
+    b:[0.045,0.150,0.260,0.360,0.470,0.585,0.715,0.865,1.0]},
+  gold:{name:"Gold 200", mono:false, sat:1.05, con:1.0, hue:0,
+    r:[0.000,0.135,0.275,0.420,0.565,0.705,0.835,0.930,1.0],
+    g:[0.010,0.115,0.240,0.365,0.490,0.615,0.735,0.865,1.0],
+    b:[0.030,0.100,0.190,0.285,0.385,0.490,0.605,0.780,0.94]},
+  superia:{name:"Superia 400", mono:false, sat:1.10, con:1.0, hue:-4,
+    r:[0.035,0.125,0.235,0.355,0.475,0.595,0.715,0.855,1.0],
+    g:[0.020,0.125,0.250,0.375,0.500,0.625,0.745,0.870,1.0],
+    b:[0.020,0.110,0.215,0.325,0.440,0.560,0.685,0.845,1.0]},
+  velvia:{name:"Velvia 50", mono:false, sat:1.30, con:1.06, hue:0,
+    r:[0.000,0.100,0.225,0.350,0.490,0.640,0.790,0.915,1.0],
+    g:[0.000,0.115,0.245,0.375,0.515,0.655,0.795,0.915,1.0],
+    b:[0.010,0.090,0.205,0.320,0.440,0.570,0.710,0.875,1.0]},
+  hp5:{name:"Ilford HP5", mono:true, sat:0, con:1.12, hue:0,
+    r:[0.008,0.080,0.205,0.350,0.500,0.655,0.795,0.910,1.0],
+    g:[0.008,0.080,0.205,0.350,0.500,0.655,0.795,0.910,1.0],
+    b:[0.008,0.080,0.205,0.350,0.500,0.655,0.795,0.910,1.0]},
+  cinestill:{name:"Cinestill 800T", mono:false, sat:.92, con:.96, hue:0,
+    r:[0.040,0.140,0.260,0.380,0.500,0.620,0.740,0.870,1.0],
+    g:[0.030,0.135,0.255,0.375,0.495,0.615,0.735,0.860,1.0],
+    b:[0.050,0.170,0.300,0.420,0.530,0.635,0.740,0.875,1.0]}
+};
+const STOCK_TILES = [
+  {id:"nc", label:"Superia 200", canister:{body:"#2f4a3a", label:"#8f2f38", text:"#f4ece0", accent:"#d8b45c", ink:"SUPERIA 200"}},
+  {id:"portra", label:"Portra 400", canister:{body:"#ded2bf", label:"#8d3b34", text:"#f7efe2", accent:"#e6d7c0", ink:"PORTRA 400"}},
+  {id:"gold", label:"Gold 200", canister:{body:"#e8c96d", label:"#c9922b", text:"#2a2118", accent:"#8a5c1c", ink:"GOLD 200"}},
+  {id:"superia", label:"Superia 400", canister:{body:"#54805c", label:"#2f5e42", text:"#eef2e6", accent:"#d8c04a", ink:"SUPERIA 400"}},
+  {id:"velvia", label:"Velvia 50", canister:{body:"#b23a4a", label:"#8e2436", text:"#fbe8e4", accent:"#e8b53c", ink:"VELVIA 50"}},
+  {id:"hp5", label:"HP5 Plus", canister:{body:"#cdcac4", label:"#1b1a18", text:"#efeee9", accent:"#ffffff", ink:"HP5 PLUS"}},
+  {id:"cinestill", label:"800T", canister:{body:"#1f4a55", label:"#123640", text:"#e8f2f2", accent:"#d7a05a", ink:"800T"}}
+];
+let lbShotFilm = {u:null, type:null};   /* 详情页临时片种：只在内存，退出即清 */
+let lbStr = 1;                          /* 详情页临时片种强度：退出即回到全局 */
+function canisterSVG(c, i){
+  const gid = "cg" + i;
+  return '<svg viewBox="0 0 120 200" aria-hidden="true"><defs>'
+   + '<linearGradient id="'+gid+'" x1="0" y1="0" x2="1" y2="0">'
+   + '<stop offset="0" stop-color="#000" stop-opacity=".6"/><stop offset=".2" stop-color="#000" stop-opacity=".18"/>'
+   + '<stop offset=".42" stop-color="#fff" stop-opacity=".2"/><stop offset=".72" stop-color="#000" stop-opacity=".18"/>'
+   + '<stop offset="1" stop-color="#000" stop-opacity=".62"/></linearGradient></defs>'
+   + '<rect x="27" y="8" width="66" height="9" rx="3" fill="#332f29"/>'
+   + '<rect x="33" y="16" width="54" height="9" fill="#1a1815"/>'
+   + '<rect x="22" y="24" width="76" height="150" rx="7" fill="'+c.body+'"/>'
+   + '<rect x="26" y="42" width="68" height="112" fill="'+c.label+'"/>'
+   + '<rect x="26" y="42" width="4" height="112" fill="'+c.accent+'"/>'
+   + '<rect x="90" y="42" width="4" height="112" fill="'+c.accent+'"/>'
+   + '<rect x="22" y="152" width="76" height="22" rx="5" fill="#221f1b"/>'
+   + '<text x="60" y="98" transform="rotate(-90 60 98)" text-anchor="middle" dominant-baseline="middle"'
+   + ' font-family="Helvetica Neue,Arial,sans-serif" font-size="17" letter-spacing="1.4"'
+   + ' fill="'+c.text+'">'+(c.ink||"")+'</text>'
+   + '<rect x="22" y="24" width="76" height="150" rx="7" fill="url(#'+gid+')"/></svg>';
+}
+function filmStrength(lb){ return lb ? lbStr : (state.filmStr === undefined ? 1 : state.filmStr); }
+function paintFilmFilters(){
+  const N = 9;
+  const sets = [["fk-", filmStrength(false)], ["fl-", filmStrength(true)]];
+  const kb = sets[1][1];
+  sets.forEach(([pre, k])=>{
+  Object.keys(STOCKS).forEach(id=>{
+    const f = STOCKS[id], node = document.getElementById(pre + id);
+    if(!node) return;
+    [["R",f.r],["G",f.g],["B",f.b]].forEach(([ch,arr])=>{
+      const fn = node.querySelector("feFunc" + ch); if(!fn) return;
+      fn.setAttribute("tableValues", arr.map((v,i)=>{
+        const id0 = i/(N-1);
+        return (id0 + (v - id0) * k).toFixed(3);
+      }).join(" "));
+    });
+  });
+  });
+}
+function filmFilterCSS(type, inLb){
+  const f = STOCKS[type]; if(!f) return "";
+  const k = filmStrength(!!inLb);
+  const sat = (1 - k) + k * f.sat, con = 1 + (f.con - 1) * k, hue = f.hue * k;
+  return "saturate(" + sat.toFixed(3) + ") url(#" + (inLb ? "fl-" : "fk-") + type + ") contrast(" + con.toFixed(3) + ")"
+    + (hue ? " hue-rotate(" + hue.toFixed(2) + "deg)" : "");
+}
+function effFilmFor(el){
+  const inLb = !!(el && el.closest && el.closest("#lb"));
+  if(inLb && lbShotFilm && lbShotFilm.u) return lbShotFilm.type;
+  return state.filmType || "nc";
+}
+/* 片种名分两行：名称一行、感光度数字一行，都居中 */
+function filmTileLabel(label){
+  const parts = String(label).trim().split(/\s+/);
+  if(parts.length < 2) return parts[0];
+  return parts.slice(0,-1).join(" ") + '<br><i>' + parts[parts.length-1] + '</i>';
+}
+function buildFilmStrip(){
+  const strip = $("#filmStrip"); if(!strip) return;
+  strip.innerHTML = STOCK_TILES.map((t,i)=>
+    '<button type="button" class="ftile' + (isFilmOn(t.id) ? " on" : "") + '" data-film="' + t.id + '" aria-label="' + t.label + '" title="' + t.label + '">'
+    + canisterSVG(t.canister, i) + '<span>' + filmTileLabel(t.label) + '</span></button>').join("");
+  strip.addEventListener("click", e=>{
+    const b = e.target.closest(".ftile"); if(!b) return;
+    setFilm(b.dataset.film);
+  });
+}
+function isFilmOn(id){
+  return effFilmFor($("#lb")) === id;
+}
+function setFilm(id){
+  const lbOpen = $("#lb") && !$("#lb").hidden;
+  if(lbOpen){                                   /* 详情页里只改预览，退出即失效 */
+    lbShotFilm = {u:"*", type:id};
+  }
+  else{
+    state.filmType = id;
+    lbShotFilm = {u:null, type:null};
+    try{ localStorage.setItem("album-filmtype", id); }catch(_){}
+  }
+  document.querySelectorAll("#filmStrip .ftile").forEach(b=>b.classList.toggle("on", isFilmOn(b.dataset.film)));
+  syncFilmUI();
+  paint();
+  if(lbOpen){ paint($("#lb")); renderLbMeta(lbCurrent()); }
+}
+function syncFilmUI(){
+  document.querySelectorAll("#filmStrip .ftile").forEach(b=>b.classList.toggle("on", isFilmOn(b.dataset.film)));
+  const eff = effFilmFor($("#lb"));
+  const row = $("#filmStrRow");
+  if(row) row.hidden = eff === "nc";   /* 缺省 NC 不需要片种强度 */
+  const k = $("#filmStr");
+  if(k){ k.value = Math.round(filmStrength(!!($("#lb") && !$("#lb").hidden))*100); k.style.setProperty("--p", k.value + "%"); const o = $("#fsv"); if(o) o.textContent = k.value; }
+}
+
+function setLogo(mode){
+  state.logo = mode;
+  document.body.setAttribute("data-logo", mode);
+  try { localStorage.setItem("album-logo", mode); } catch(e){}
+  document.querySelectorAll(".ap-seg button[data-logo]")
+    .forEach(b=>b.classList.toggle("on", b.getAttribute("data-logo")===mode));
+  if(state.lb) renderLb();
+}
+document.querySelectorAll(".ap-seg button[data-logo]").forEach(b=>{
+  b.addEventListener("click", e=>{ e.stopPropagation(); setLogo(b.getAttribute("data-logo")); });
+});
+setLogo(state.logo);
+bindAging("#strength", "#sv", "strength");
+bindAging("#grain", "#grv", "grain");
+/* 胶片模拟初始化 */
+try{
+  const ft = localStorage.getItem("album-filmtype");
+  if(ft && (ft === "nc" || STOCKS[ft])) state.filmType = ft;
+  const fs = localStorage.getItem("album-filmstr");
+  if(fs !== null) state.filmStr = Math.max(0, Math.min(1, +fs/100));
+}catch(_){}
+fetch("/api/auth").then(r=>r.json()).then(j=>{
+  const lo = $("#logout"); if(lo && j && j.auth) lo.hidden = false;
+}).catch(()=>{});
+buildFilmStrip();
+paintFilmFilters();
+syncFilmUI();
+const filmStr = $("#filmStr");
+if(filmStr){
+  filmStr.addEventListener("input", e=>{
+    const inLb = !$("#lb").hidden;
+    if(inLb) lbStr = +e.target.value/100;      /* 详情页里只改当前预览 */
+    else state.filmStr = +e.target.value/100;
+    e.target.style.setProperty("--p", e.target.value + "%");
+    $("#fsv").textContent = e.target.value;
+    if(!inLb){ try{ localStorage.setItem("album-filmstr", e.target.value); }catch(_){} }
+    paintFilmFilters();
+    if(inLb) paint($("#lb")); else paint();
+  });
+}
+agingLabel();
+const agingBtn = $("#agingBtn"), agingPanel = $("#agingPanel");
+function closeAging(){
+  agingPanel.hidden = true;
+  agingBtn.setAttribute("aria-expanded", "false");
+}
+agingBtn.addEventListener("click", e=>{
+  e.stopPropagation();
+  const willOpen = agingPanel.hidden;
+  agingPanel.hidden = !willOpen;
+  agingBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+});
+document.addEventListener("click", e=>{
+  if(agingPanel.hidden) return;
+  if(e.target.closest(".aging")) return;
+  closeAging();
+});
+document.addEventListener("keydown", e=>{
+  if(e.key === "Escape" && !agingPanel.hidden) closeAging();
+});
+/* ---------- 库管理 ---------- */
+async function postJSON(u, body){
+  const r = await fetch(u, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body||{})});
+  const j = await r.json().catch(()=>({}));
+  if(!j.ok) throw new Error(j.error || ("HTTP "+r.status));
+  return j;
+}
+function libMsg(text, err){
+  const m = $("#libMsg"); if(!m) return;
+  m.textContent = text;
+  m.classList.toggle("err", !!err);
+}
+function renderLibList(libs){
+  const box = $("#libList"); if(!box) return;
+  if(!libs.length){
+    box.innerHTML = '<p class="lib-msg">还没有任何库，在下面输入一个路径即可开始。</p>';
+    return;
+  }
+  box.innerHTML = libs.map(l=>{
+    const tag = l.kind === "folder" ? "文件夹" : "照片库";
+    return '<div class="lib-row" data-id="'+esc(l.id)+'">'+
+      '<span class="lib-tag'+(l.kind==="folder"?" folder":"")+'">'+tag+'</span>'+
+      '<div class="lib-info"><div class="lib-name">'+esc(l.name)+'</div>'+
+      '<div class="lib-path">'+esc(l.path)+(l.exists ? "" : " · 路径不存在")+'</div></div>'+
+      '<button class="lib-op" type="button" data-op="rescan">重扫</button>'+
+      '<button class="lib-op danger" type="button" data-op="remove">移除</button>'+
+      '</div>';
+  }).join("");
+}
+async function refreshLibs(){
+  state.libs = await api("/api/libraries");
+  const sel = $("#libSel");
+  if(sel){
+    sel.innerHTML = state.libs.map(l=>'<option value="'+l.i+'">'+esc(l.name)+'</option>').join("");
+  }
+  renderLibList(state.libs);
+  return state.libs;
+}
+function closeLibPanel(){
+  const btn = $("#libBtn"), panel = $("#libPanel");
+  if(panel) panel.hidden = true;
+  if(btn) btn.setAttribute("aria-expanded", "false");
+}
+$("#chkBtn") && $("#chkBtn").addEventListener("click", async e=>{
+  e.stopPropagation();
+  const l = (state.libs || [])[state.lib];
+  if(!l) return;
+  const b = e.currentTarget, old = b.textContent;
+  b.disabled = true; b.textContent = "检测中";
+  try{
+    const j = await postJSON("/api/library/check", {id: l.id});
+    if(!j.supported){ b.textContent = "仅文件夹库"; }
+    else if(j.changed){
+      b.textContent = "已更新";
+      await loadLib(state.lib);
+      await render();
+    }else{
+      b.textContent = "没有变化";
+    }
+  }catch(err){
+    b.textContent = "出错";
+  }finally{
+    setTimeout(()=>{ b.textContent = old; b.disabled = false; }, 1600);
+  }
+});
+
+$("#libBtn").addEventListener("click", e=>{
+  e.stopPropagation();
+  const panel = $("#libPanel");
+  const willOpen = panel.hidden;
+  panel.hidden = !willOpen;
+  $("#libBtn").setAttribute("aria-expanded", willOpen ? "true" : "false");
+  if(willOpen) refreshLibs().catch(()=>{});
+});
+document.addEventListener("click", e=>{
+  const panel = $("#libPanel");
+  if(!panel || panel.hidden) return;
+  if(e.target.closest(".libmgr")) return;
+  closeLibPanel();
+});
+document.addEventListener("keydown", e=>{
+  const panel = $("#libPanel");
+  if(e.key === "Escape" && panel && !panel.hidden) closeLibPanel();
+});
+$("#libList").addEventListener("click", async e=>{
+  const b = e.target.closest(".lib-op"); if(!b) return;
+  const row = b.closest(".lib-row");
+  const lib = (state.libs || []).find(x=>x.id === row.dataset.id);
+  if(!lib) return;
+  b.disabled = true;
+  try{
+    if(b.dataset.op === "remove"){
+      await postJSON("/api/library/remove", {id: lib.id});
+      libMsg("已移除「"+lib.name+"」，磁盘上的文件没有动。");
+    }else{
+      await postJSON("/api/library/rescan", {id: lib.id});
+      libMsg("已清掉「"+lib.name+"」的索引，下次打开会重新扫描。");
+    }
+  }catch(err){
+    libMsg(err.message, true);
+  }finally{
+    b.disabled = false;
+    await refreshLibs().catch(()=>{});
+    if(state.lib >= (state.libs||[]).length){
+      state.lib = 0;
+      $("#libSel").value = 0;
+      await loadLib(0); render();
+    }
+  }
+});
+$("#libAddBtn").addEventListener("click", async ()=>{
+  const p = $("#libPath").value.trim();
+  if(!p){ libMsg("先填一个路径（Finder 里选中文件夹，⌥ + 右键可「拷贝路径」）。", true); return; }
+  const btn = $("#libAddBtn");
+  btn.disabled = true;
+  libMsg("正在扫描… 大文件夹可能要等一会儿，扫完会记住结果。");
+  try{
+    const j = await postJSON("/api/library/add", {path: p});
+    libMsg("已加入「"+j.library.name+"」，共 "+j.count+" 张。");
+    $("#libPath").value = "";
+    await refreshLibs();
+    const i = j.library.i;
+    $("#libSel").value = i;
+    await loadLib(i); render();
+  }catch(err){
+    libMsg(err.message, true);
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+$("#libSel").addEventListener("change", async e=>{
+  const v = +e.target.value;
+  const l = (state.libs || [])[v];
+  if(l) localStorage.setItem("album-lib-id", l.id);
+  $("#app").innerHTML = '<div class="boot"><div class="ring"></div><p>切换图库中</p></div>';
+  await loadLib(v);
+  render();
+});
+document.addEventListener("click", e=>{
+  const f = e.target.closest(".fitbar button");
+  if(f){ setFit(f.dataset.fit); return; }
+  const b = e.target.closest(".ph");
+  if(b && b.dataset.d) openLb(b.dataset.d, +b.dataset.k);
+});
+
+function syncFitbar(show){
+  const fb = $("#fitbar"); if(!fb) return;
+  fb.hidden = !show;
+  fb.querySelectorAll("button").forEach(b=>{
+    b.classList.toggle("on", b.dataset.fit === state.fit);
+  });
+}
+function relayoutStream(){
+  if(!state.stream || !$("#stream")) return;
+  document.querySelectorAll("#stream .daysec").forEach(sec=>{
+    layoutSection(sec, state.stream.byDay[sec.dataset.d] || []);
+  });
+  const key = state.stream.anchor;
+  if(key && $("#crumbDay")) $("#crumbDay").textContent = pad(+key.slice(8)) + " 日";
+  paint($("#stream"));
+}
+function setFit(v){
+  if(v !== "prop" && v !== "square") return;
+  state.fit = v;
+  try{ localStorage.setItem("album-fit", v); }catch(e){}
+  document.querySelectorAll(".fitbar button").forEach(b=>{
+    b.classList.toggle("on", b.dataset.fit === v);
+  });
+  const top = document.querySelector("#stream .daysec");
+  const keep = top ? top.getBoundingClientRect().top : 0;
+  relayoutStream();
+  if(top){
+    const again = document.querySelector('#stream .daysec[data-d="'+top.dataset.d+'"]');
+    if(again) window.scrollTo(0, again.getBoundingClientRect().top + window.scrollY - keep);
+  }
+}
+$("#lbClose").addEventListener("click", closeLb);
+$("#lbPrev").addEventListener("click", ()=>stepLb(-1));
+$("#lbNext").addEventListener("click", ()=>stepLb(1));
+$("#lb").addEventListener("click", e=>{ if(e.target.id==="lb"||e.target.classList.contains("lb-stage")) closeLb(); });
+
+/* 按住照片看原貌：鼠标按下即时；手机长按 150ms 触发。左右滑动手势翻页（手机端隐藏箭头） */
+const lbMedia = $("#lbMedia");
+let peelOn = false, holdTimer = null, downX = 0, downY = 0, downT = 0;
+function rawOn(){
+  const a = $("#lbAged"); if(!a || a.dataset.raw === "1") return;
+  a.style.setProperty("--t","0");
+  a.style.setProperty("--hiop","0");
+  a.style.setProperty("--shop","0");
+  a.style.setProperty("--gop","0");
+  const m = a.querySelector("img,video"); if(m) m.style.filter = "none";
+  a.dataset.raw = "1";
+}
+function rawOff(){
+  const a = $("#lbAged"); if(!a || a.dataset.raw !== "1") return;
+  delete a.dataset.raw; paint($("#lb"));
+}
+lbMedia.addEventListener("contextmenu", e=>e.preventDefault());
+/* 手机端：从右边缘往右滑 = 退出详情 */
+(function(){
+  let sy = null, sx = null, live = false;
+  window.addEventListener("touchstart", e=>{
+    const lb = document.getElementById("lb");
+    if(!lb || lb.hidden || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    live = (window.innerWidth - t.clientX) <= 28;   /* 起手贴着右边缘 */
+    sx = t.clientX; sy = t.clientY;
+  }, {passive:true});
+  window.addEventListener("touchmove", e=>{
+    if(!live || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
+    if(dx > 60 && dy < 80){ live = false; closeLb(); }
+  }, {passive:true});
+  window.addEventListener("touchend", ()=>{ live = false; }, {passive:true});
+})();
+
+/* 手动旋转：0/90/180/270，容器按旋转后的可见比例重算，图片自身旋转 */
+let lbRot = 0;
+/* 按最长边自适应：容器按照片真实比例算出宽高，永远不裁 */
+function capHpx(){
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--capH")) || 0;
+}
+function fitLb(){
+  const st = $(".lb-stage"), a = $("#lbAged"), im = a && a.querySelector("img");
+  if(!st || !a || !im) return;
+  const bw = st.clientWidth, bh = Math.max(0, st.clientHeight - capHpx());
+  const nw = im.naturalWidth || 0, nh = im.naturalHeight || 0;
+  if(!nw || !nh){ a.style.width = ""; a.style.height = ""; return; }
+  const odd = lbRot % 180 !== 0;
+  const ar = odd ? nh / nw : nw / nh;
+  let w = bw, h = bw / ar;
+  if(h > bh){ h = bh; w = bh * ar; }
+  a.style.width = Math.round(w) + "px";
+  a.style.height = Math.round(h) + "px";
+  a.style.transform = "";
+  pipLbImage(im, Math.round(w), Math.round(h), odd);
+}
+/* 图片绝对居中：未旋转时铺满容器；旋转 90/270 时用交换后的宽高，再转回来正好填满 */
+function pipLbImage(im, W, H, odd){
+  if(!im) return;
+  im.style.position = "absolute";
+  im.style.left = "50%";
+  im.style.top = "50%";
+  im.style.width = (odd ? H : W) + "px";
+  im.style.height = (odd ? W : H) + "px";
+  im.style.objectFit = "contain";
+  applyZoom(true);
+}
+/* ---------- 桌面端浮动控件：指针进入照片范围才显示 ---------- */
+(function(){
+  const lb = document.getElementById("lb"), media = document.getElementById("lbMedia");
+  if(!lb || !media) return;
+  const mq = matchMedia("(hover:hover) and (min-width:761px)");
+  const CTRL = ".lb-close,.lb-zoom,.lb-arrow,.lb-tools";
+  function show(on){ lb.classList.toggle("ui-on", !!on); }
+  function overArea(x, y){
+    /* 只要不在参数栏里就算在照片区：留白、黑边、照片本身都显示控件 */
+    const capH = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--capH")) || 0;
+    return y >= 0 && y <= innerHeight - capH;
+  }
+  lb.addEventListener("mousemove", e=>{
+    if(!mq.matches) return;
+    if(lb.hidden){ show(false); return; }
+    if(e.target.closest && e.target.closest(CTRL)){ show(true); return; }
+    show(overArea(e.clientX, e.clientY));
+  });
+  lb.addEventListener("mouseleave", ()=>{ show(false); });
+  lb.addEventListener("focusin", e=>{
+    if(!mq.matches) return;
+    if(e.target.closest && e.target.closest(CTRL)) show(true);
+  });
+  lb.addEventListener("focusout", ()=>{
+    setTimeout(()=>{ if(!lb.contains(document.activeElement)) show(false); }, 0);
+  });
+  new MutationObserver(()=>{ if(lb.hidden) show(false); })
+    .observe(lb, {attributes:true, attributeFilter:["hidden"]});
+  if(!mq.matches) lb.classList.remove("ui-on");
+
+  /* 触屏：轻点照片显示控件，3 秒后自动收起；再点一下收起 */
+  const touchMq = matchMedia("(hover:none)");
+  let hideT = 0;
+  const autoHide = ()=>{ clearTimeout(hideT); hideT = setTimeout(()=>show(false), 3000); };
+  lb.addEventListener("pointerup", e=>{
+    if(!touchMq.matches || lb.hidden) return;
+    const onCtrl = e.target.closest && e.target.closest(CTRL);
+    if(lb.classList.contains("ui-on") && !onCtrl){ clearTimeout(hideT); show(false); return; }
+    show(true); autoHide();
+  });
+})();
+/* 放大 / 缩小：第 1 档按最短边填满（cover），之后在填满基础上继续放大；
+   缩放全程走 transform，窗口一变就按新尺寸重算，画面始终等比跟着走 */
+let lbZoom = 1, zvX = 0, zvY = 0, panLastX = 0, panLastY = 0, panning = false, lbStep = 0;
+const ZOOM_STEPS = [0, 1, 1.5, 2, 3];   /* 0 = 适配整图；1 = 最短边填满；其余为填满后的倍率 */
+function fillScale(){
+  const st = $(".lb-stage"), im = $("#lbAged img");
+  if(!st || !im) return 1;
+  /* 可视区要扣掉底部参数条，第一次放大才是按“最短边填满照片区” */
+  const bw = st.clientWidth, bh = Math.max(0, st.clientHeight - capHpx());
+  const nw = im.naturalWidth || im.clientWidth, nh = im.naturalHeight || im.clientHeight;
+  if(!bw || !bh || !nw || !nh) return 1;
+  const fit = Math.min(bw / nw, bh / nh), cover = Math.max(bw / nw, bh / nh);
+  return fit > 0 ? Math.max(1, cover / fit) : 1;
+}
+function clampPan(){
+  const st = $(".lb-stage"), im = $("#lbAged img");
+  if(!st || !im) return;
+  /* 旋转 90/270 后视觉宽高互换，边界要按看到的那一面算 */
+  const odd = lbRot % 180 !== 0;
+  const dw = im.clientWidth, dh = im.clientHeight;
+  const w = (odd ? dh : dw) * lbZoom, h = (odd ? dw : dh) * lbZoom;
+  const visH = Math.max(0, st.clientHeight - capHpx());
+  const mx = Math.max(0, (w - st.clientWidth) / 2), my = Math.max(0, (h - visH) / 2);
+  zvX = Math.min(mx, Math.max(-mx, zvX));
+  zvY = Math.min(my, Math.max(-my, zvY));
+}
+/* 唯一的变换书写口：居中锚点 + 平移 + 旋转 + 缩放，任何地方改位置都走这里，避免基准漂移 */
+function lbTransform(){
+  const im = $("#lbAged img"); if(!im) return;
+  im.style.transform = "translate(-50%,-50%) translate(" + zvX.toFixed(1) + "px," + zvY.toFixed(1) + "px)" +
+    (lbRot ? " rotate(" + lbRot + "deg)" : "") + " scale(" + lbZoom.toFixed(4) + ")";
+  /* 覆盖层（颗粒 / 暗角 / 褪色）同步位移缩放，始终跟照片同一块区域 */
+  const a = $("#lbAged");
+  if(a){
+    a.style.setProperty("--zfx", zvX.toFixed(1) + "px");
+    a.style.setProperty("--zfy", zvY.toFixed(1) + "px");
+    a.style.setProperty("--zfsc", lbZoom.toFixed(4));
+    a.style.transition = "none";
+  }
+}
+/* 无级缩放：鼠标滚轮 / 触控板双指捏合 / 手机双指捏合，都可以连续缩放，锚点跟着指针走 */
+function zoomRange(){
+  const f = Math.max(1, fillScale());
+  return { min:1, fill:f, max:f * 6 };
+}
+function mediaCenter(){
+  const m = document.getElementById("lbMedia"), capH = capHpx();
+  if(!m) return { x: innerWidth / 2, y: (innerHeight - capH) / 2 };
+  const r = m.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + Math.max(0, r.height - capH) / 2 };
+}
+function syncZoomUI(){
+  const zi = $("#lbZoomIn"), zo = $("#lbZoomOut"), r = zoomRange();
+  if(zi) zi.disabled = lbZoom >= r.max - 0.001;
+  if(zo) zo.disabled = lbZoom <= 1.001;
+  const im = $("#lbAged img"); if(im) im.style.cursor = lbZoom > 1.001 ? "grab" : "";
+}
+/* ax/ay 给了就以此为锚点缩放，不给就以可视区中心为准 */
+function setZoom(z, ax, ay, noAnim){
+  const r = zoomRange();
+  z = Math.min(r.max, Math.max(r.min, z));
+  if(ax != null && ay != null && lbZoom > 0){
+    const c = mediaCenter(), dx = ax - c.x, dy = ay - c.y, k = z / lbZoom;
+    zvX = dx - (dx - zvX) * k; zvY = dy - (dy - zvY) * k;
+  }
+  lbZoom = z;
+  if(lbZoom <= 1.001){ zvX = 0; zvY = 0; }
+  clampPan();
+  const im = $("#lbAged img");
+  if(im) im.style.transition = noAnim ? "none" : "transform .16s ease";
+  lbTransform();
+  syncZoomUI();
+}
+function applyZoom(noAnim){ setZoom(lbZoom, null, null, noAnim === true); }
+function resetZoom(){ lbZoom = 1; zvX = 0; zvY = 0; fitLb(); setZoom(1, null, null, true); }
+function zoomStep(dir){
+  const r = zoomRange();
+  if(dir > 0) setZoom(lbZoom <= 1.001 ? r.fill : lbZoom * 1.6);
+  else if(lbZoom <= r.fill + 0.001) resetZoom();
+  else { const n = lbZoom / 1.6; setZoom(n <= r.fill ? r.fill : n); }
+}
+/* 滚轮 / 触控板双指捏合（mac 的 pinch 也走 wheel + ctrlKey） */
+document.getElementById("lbMedia").addEventListener("wheel", e=>{
+  const lb = document.getElementById("lb");
+  if(!lb || lb.hidden) return;
+  e.preventDefault();
+  const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+  setZoom(lbZoom * Math.exp(-d * 0.0016), e.clientX, e.clientY, true);
+}, { passive:false });
+/* 双击照片：放大到填满的 1.8 倍，再双击回到整图适配 */
+(function(){
+  const m = document.getElementById("lbMedia"); if(!m) return;
+  m.addEventListener("dblclick", e=>{
+    const lb = document.getElementById("lb");
+    if(!lb || lb.hidden) return;
+    if(e.target.closest && e.target.closest(".btn,.aging-btn,.lb-arrow")) return;
+    e.preventDefault(); e.stopPropagation();
+    const r = zoomRange();
+    if(lbZoom <= 1.001) setZoom(Math.max(r.fill * 1.8, r.fill + 0.6), e.clientX, e.clientY, false);
+    else resetZoom();
+  });
+})();
+/* 手机双指捏合 */
+(function(){
+  const pts = new Map(); let d0 = 0, z0 = 1, midX = 0, midY = 0;
+  const m = document.getElementById("lbMedia"); if(!m) return;
+  function pair(){ const v = [...pts.values()]; return v.length >= 2 ? [v[0], v[1]] : null; }
+  m.addEventListener("pointerdown", e=>{
+    if(e.pointerType === "mouse") return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    const p = pair(); if(p){ d0 = Math.hypot(p[0][0]-p[1][0], p[0][1]-p[1][1]); z0 = lbZoom;
+      midX = (p[0][0]+p[1][0])/2; midY = (p[0][1]+p[1][1])/2; window.__lbPinch = 1; }
+  });
+  m.addEventListener("pointermove", e=>{
+    if(!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, [e.clientX, e.clientY]);
+    const p = pair(); if(!p || !d0) return;
+    const d = Math.hypot(p[0][0]-p[1][0], p[0][1]-p[1][1]);
+    if(!d) return;
+    if(holdTimer){ clearTimeout(holdTimer); holdTimer = null; }
+    if(peelOn){ rawOff(); peelOn = false; }
+    setZoom(z0 * d / d0, midX, midY, true);
+  });
+  ["pointerup","pointercancel","pointerleave"].forEach(t=> m.addEventListener(t, e=>{
+    pts.delete(e.pointerId); if(pts.size < 2){ d0 = 0; window.__lbPinch = 0; }
+  }));
+})();
+$("#lbZoomIn") && $("#lbZoomIn").addEventListener("click", e=>{ e.stopPropagation(); zoomStep(1); });
+$("#lbZoomOut") && $("#lbZoomOut").addEventListener("click", e=>{ e.stopPropagation(); zoomStep(-1); });
+document.addEventListener("click", e=>{
+  const b = e.target.closest && e.target.closest("#lbRotate"); if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  lbRot = (lbRot + 90) % 360;
+  zvX = 0; zvY = 0;
+  fitLb(); applyZoom();
+}, true);
+lbMedia.addEventListener("pointerdown", e=>{
+  if(e.pointerType === "mouse" && e.button !== 0) return;
+  panLastX = e.clientX; panLastY = e.clientY; panning = false;
+  downX = e.clientX; downY = e.clientY; downT = Date.now();
+  clearTimeout(holdTimer); holdTimer = null;
+  if(e.pointerType === "mouse"){ rawOn(); peelOn = true; return; }
+  holdTimer = setTimeout(()=>{ rawOn(); peelOn = true; }, 150);
+});
+document.addEventListener("pointermove", e=>{
+  if(window.__lbPinch){ panLastX = e.clientX; panLastY = e.clientY; return; }
+  if(!downT) return;
+  if(lbZoom > 1){                       /* 放大状态下拖动平移，不翻页 */
+    panning = true;
+    zvX += e.clientX - panLastX; zvY += e.clientY - panLastY;
+    panLastX = e.clientX; panLastY = e.clientY;
+    clampPan();
+    const im = $("#lbAged img");
+    if(im){ im.style.transition = "none"; lbTransform(); im.style.cursor = "grabbing"; }
+    return;
+  }
+  if(Math.abs(e.clientX - downX) > 12 || Math.abs(e.clientY - downY) > 12){
+    if(holdTimer){ clearTimeout(holdTimer); holdTimer = null; }
+    if(peelOn){ rawOff(); peelOn = false; }
+  }
+});
+document.addEventListener("pointerup", e=>{
+  if(!downT) return;
+  if(panning){ panning = false; downT = 0; applyZoom(); return; }
+  const dx = e.clientX - downX, dy = e.clientY - downY, dt = Date.now() - downT;
+  const swipe = dt < 900 && Math.abs(dx) > 46 && Math.abs(dx) > Math.abs(dy) * 1.3;
+  clearTimeout(holdTimer); holdTimer = null;
+  if(peelOn){ rawOff(); peelOn = false; }
+  downT = 0;
+  if(swipe) stepLb(dx > 0 ? -1 : 1);
+});
+document.addEventListener("pointercancel", ()=>{
+  clearTimeout(holdTimer); holdTimer = null;
+  if(peelOn){ rawOff(); peelOn = false; }
+  downT = 0;
+});
+document.addEventListener("keydown", e=>{
+  if($("#lb").hidden) return;
+  if(e.key==="Escape") closeLb();
+  else if(e.key==="ArrowLeft") stepLb(-1);
+  else if(e.key==="ArrowRight") stepLb(1);
+});
+window.addEventListener("hashchange", render);
+let rsTimer = null;
+window.addEventListener("resize", ()=>{
+  clearTimeout(rsTimer);
+  rsTimer = setTimeout(()=>{
+    if(!$("#lb").hidden){ fitLb(); applyZoom(true); return; }
+    if(!state.stream || !$("#stream")) return;
+    document.documentElement.style.setProperty("--tb", tbH()+"px");
+    const first = document.querySelector("#stream .daysec");
+    const keep = first ? first.getBoundingClientRect().top : 0;
+    relayoutStream();
+    if(first){
+      const again = document.querySelector('#stream .daysec[data-d="'+first.dataset.d+'"]');
+      if(again) window.scrollTo(0, again.getBoundingClientRect().top + window.scrollY - keep);
+    }
+  }, 180);
+});
+
+/* ---------- 启动 ---------- */
+document.addEventListener("error", e=>{
+  const img = e.target;
+  if(!img || img.tagName !== "IMG") return;
+  const host = img.parentElement;
+  if(!host || host.querySelector(".noprev")) return;
+  img.style.visibility = "hidden";
+  const s = document.createElement("span");
+  s.className = "noprev"; s.textContent = "无预览";
+  host.appendChild(s);
+}, true);
+
+(async function boot(){
+  try{
+    const libs = await refreshLibs();
+    if(!libs.length){
+      $("#app").innerHTML = '<div class="empty">还没有图库。右上角「库管理」里加一个文件夹或 .photoslibrary 路径。</div>';
+      $("#boot") && $("#boot").remove();
+      return;
+    }
+    const sel = $("#libSel");
+    const savedId = localStorage.getItem("album-lib-id");
+    let start = libs.findIndex(l=>l.id === savedId);
+    if(start < 0) start = 0;
+    sel.value = start;
+    await loadLib(start);
+    state.name && (document.title = state.name + " · 时光相册");
+    await render();
+    $("#boot") && $("#boot").remove();
+  }catch(err){
+    $("#app").innerHTML = '<div class="empty">启动失败：'+esc(err.message)+'</div>';
+  }
+})();
+
+
+
+})();
+
+</script>
+</body>
+</html>

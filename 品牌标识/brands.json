@@ -1,0 +1,104 @@
+[
+ {
+  "key": "apple",
+  "label": "Apple",
+  "color": "#aeb5bc",
+  "viewBox": "1.85 -0.35 20.29 24.7"
+ },
+ {
+  "key": "dji",
+  "label": "DJI",
+  "color": "#b9bec4",
+  "viewBox": "-0.35 4.57 24.7 14.86"
+ },
+ {
+  "key": "fujifilm",
+  "label": "Fujifilm",
+  "color": "#00a651",
+  "viewBox": "-0.35 9.63 24.7 4.73"
+ },
+ {
+  "key": "google",
+  "label": "Google Pixel",
+  "color": "#4285f4",
+  "viewBox": "-0.07 -0.35 24.14 24.7"
+ },
+ {
+  "key": "huawei",
+  "label": "Huawei",
+  "color": "#cf0a2c",
+  "viewBox": "-0.35 2.6 24.7 18.79"
+ },
+ {
+  "key": "leica",
+  "label": "Leica",
+  "color": "#e30613",
+  "viewBox": "-0.35 -0.35 24.7 24.7"
+ },
+ {
+  "key": "meizu",
+  "label": "Meizu",
+  "color": "#00a0e9",
+  "viewBox": "-0.35 4.81 24.7 14.39"
+ },
+ {
+  "key": "motorola",
+  "label": "Motorola",
+  "color": "#3ba3ff",
+  "viewBox": "-0.35 -0.35 24.7 24.7"
+ },
+ {
+  "key": "nikon",
+  "label": "Nikon",
+  "color": "#ffe100",
+  "viewBox": "-0.35 8.32 24.7 7.36"
+ },
+ {
+  "key": "nokia",
+  "label": "Nokia",
+  "color": "#124191",
+  "viewBox": "-0.35 8.84 24.7 6.33"
+ },
+ {
+  "key": "oneplus",
+  "label": "OnePlus",
+  "color": "#eb0029",
+  "viewBox": "-0.35 -0.35 24.7 24.7"
+ },
+ {
+  "key": "oppo",
+  "label": "OPPO",
+  "color": "#1ba97a",
+  "viewBox": "-0.35 8.79 24.7 6.42"
+ },
+ {
+  "key": "panasonic",
+  "label": "Panasonic",
+  "color": "#1e6df2",
+  "viewBox": "-0.35 9.78 24.7 4.45"
+ },
+ {
+  "key": "samsung",
+  "label": "Samsung",
+  "color": "#2a3fd0",
+  "viewBox": "-0.35 9.82 24.7 4.36"
+ },
+ {
+  "key": "sony",
+  "label": "Sony",
+  "color": "#dcdcdc",
+  "viewBox": "-0.35 9.54 24.7 4.92"
+ },
+ {
+  "key": "vivo",
+  "label": "vivo",
+  "color": "#415fff",
+  "viewBox": "-0.35 8.51 24.7 6.98"
+ },
+ {
+  "key": "xiaomi",
+  "label": "Xiaomi",
+  "color": "#ff6900",
+  "viewBox": "-0.35 -0.35 24.7 24.7"
+ }
+]

@@ -1,0 +1,9 @@
+# 私有 / 本机相关，不入库
+密码.txt
+libraries.json
+cache/
+.DS_Store
+__pycache__/
+*.pyc
+*.photoslibrary
+index*.pkl
