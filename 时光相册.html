@@ -2376,6 +2376,8 @@ lbMedia.addEventListener("pointerdown", e=>{
   panLastX = e.clientX; panLastY = e.clientY; panning = false;
   downX = e.clientX; downY = e.clientY; downT = Date.now();
   clearTimeout(holdTimer); holdTimer = null;
+  /* 放大状态下按下是拖动定位，不触发「按住看原貌」，否则包浆会被临时关掉 */
+  if(lbZoom > 1.001) return;
   if(e.pointerType === "mouse"){ rawOn(); peelOn = true; return; }
   holdTimer = setTimeout(()=>{ rawOn(); peelOn = true; }, 150);
 });
